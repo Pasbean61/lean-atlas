@@ -11,7 +11,7 @@ Plain HTML/CSS/JS, no build step. Serve the folder over http (the model and the 
 - `assets/body.glb` – the 3D model (muscles grouped into 23 trainable groups, tendons, skeleton), Draco-compressed
 - `js/viewer.js` – three.js stage: turntable, starfield, lighting, procedural muscle-fibre shader, picking, x-ray selection, post-processing
 - `js/app.js` – page logic: drawer, language, index, deep links (`#biceps`)
-- `js/data.js` – muscle groups, 51 exercises (English video ids), rules, weekly plan, UI strings
+- `js/data.js` – muscle groups, 51 exercises (English video ids), UI strings
 - `js/videos-zh.js` – Chinese lesson per exercise (Bilibili)
 - `js/names.js` – Chinese names of the individual muscles in the model
 

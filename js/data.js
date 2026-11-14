@@ -341,18 +341,10 @@ LA.muscles = {
     ex: ["tibRaise"] }
 };
 
-/* Weekly Upper / Lower plan — 4 days */
-LA.plan = [
-  { d: { zh: "周一 · 上肢 A", en: "Mon · Upper A" }, items: ["benchPress", "latPulldown", "dbShoulderPress", "cableRow", "lateralRaise", "pushdown"] },
-  { d: { zh: "周二 · 下肢 A", en: "Tue · Lower A" }, items: ["squat", "rdl", "legExtension", "standingCalf", "cableCrunch"] },
-  { d: { zh: "周四 · 上肢 B", en: "Thu · Upper B" }, items: ["inclineDbPress", "pullUp", "chestSupportedRow", "cableLateral", "facePull", "inclineCurl"] },
-  { d: { zh: "周五 · 下肢 B", en: "Fri · Lower B" }, items: ["hipThrust", "bulgarian", "legCurl", "hipAbduction", "seatedCalf", "hangingLegRaise"] }
-];
-
 /* UI strings */
 LA.t = {
   zh: {
-    navAtlas: "肌肉图谱", navRules: "薄肌法则", navPlan: "一周计划",
+    navAtlas: "肌肉图谱",
     eyebrow: "真实解剖 · 3D 肌肉图谱",
     h1a: "点哪里，", h1b: "就练哪里。",
     lede: "一具按真实人体解剖数据建模的 3D 肌肉模型。拖动旋转，点击任意一块肌肉，直接看这块肌肉怎么练。",
@@ -363,17 +355,12 @@ LA.t = {
     lv: ["", "入门", "进阶", "挑战"], cues: "动作要点", alsoWorks: "同时练到",
     play: "播放教学视频", openYt: "在 YouTube 打开", openBili: "在 B 站打开", altEn: "英文原版教学",
     credit: "视频来自", close: "关闭", enlarge: "放大", shrink: "还原",
-    rulesEyebrow: "薄肌 = 适度肌肉 + 较低体脂", rulesH: "六条薄肌法则",
-    rulesLede: "薄肌不是“少练一点”，而是用足够的训练量把肌肉练出来，再把体脂控制在能看见线条的范围。",
-    planEyebrow: "上下肢分化 · 每周 4 练", planH: "照着练的一周计划",
-    planLede: "每个肌群每周被练到两次。点击任意动作直接看教学视频。",
     foot1: "中文教学视频来自哔哩哔哩，英文教学视频来自 YouTube，版权归原作者所有。",
     foot2: "本网站仅供健身学习参考，有伤病请先咨询医生或康复师。",
     viewOnFront: "正面可见", viewOnBack: "背面可见",
     sideL: "左侧",
     sideR: "右侧",
     auto: "自动旋转",
-    scroll: "薄肌法则",
     loading: "正在载入人体模型",
     noGl: "这台设备无法显示 3D 模型，请用肌群索引选择部位。",
     foot3: "3D 模型基于 Z-Anatomy（CC BY-SA 4.0）与 BodyParts3D（© 日本生命科学数据库中心，CC BY-SA 2.1 JP）制作。",
@@ -381,7 +368,7 @@ LA.t = {
     muscles: "包含的肌肉"
   },
   en: {
-    navAtlas: "Atlas", navRules: "Principles", navPlan: "Weekly plan",
+    navAtlas: "Atlas",
     eyebrow: "Real anatomy · 3D muscle atlas",
     h1a: "Tap a muscle.", h1b: "Learn the lift.",
     lede: "A 3D muscle model built from real human anatomy data. Drag to turn it, tap any muscle, and see exactly how to train it.",
@@ -392,17 +379,12 @@ LA.t = {
     lv: ["", "Beginner", "Intermediate", "Advanced"], cues: "Form cues", alsoWorks: "Also works",
     play: "Play lesson", openYt: "Open on YouTube", openBili: "Open on Bilibili", altEn: "English lesson",
     credit: "Video by", close: "Close", enlarge: "Enlarge", shrink: "Exit",
-    rulesEyebrow: "Lean = moderate muscle + low body fat", rulesH: "Six rules for a lean build",
-    rulesLede: "A lean build doesn't come from training less. It comes from enough training to build muscle, then keeping body fat low enough to show it.",
-    planEyebrow: "Upper / lower split · 4 days a week", planH: "A week you can follow",
-    planLede: "Every muscle group gets trained twice a week. Tap any exercise to watch the lesson.",
     foot1: "English lessons are embedded from YouTube and Chinese lessons from Bilibili; rights belong to their creators.",
     foot2: "For general education only. If you have an injury, check with a doctor or physio first.",
     viewOnFront: "Front view", viewOnBack: "Back view",
     sideL: "Left",
     sideR: "Right",
     auto: "Auto-rotate",
-    scroll: "The rules",
     loading: "Loading the anatomy model",
     noGl: "This device cannot show the 3D model. Use the muscle index instead.",
     foot3: "3D model derived from Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (© The Database Center for Life Science, CC BY-SA 2.1 Japan).",
@@ -410,24 +392,3 @@ LA.t = {
     muscles: "Muscles in this group"
   }
 };
-
-LA.rules = [
-  { n: "10–20", u: { zh: "组 / 肌群 / 周", en: "sets / muscle / week" },
-    h: { zh: "训练量要够", en: "Enough volume" },
-    p: { zh: "每个肌群每周 10–20 个有效组，分 2 次练完。新手从 10 组左右开始。", en: "10–20 hard sets per muscle per week, split over two sessions. Beginners start near 10." } },
-  { n: "1–3", u: { zh: "RIR · 力竭前剩余次数", en: "reps in reserve" },
-    h: { zh: "接近力竭", en: "Train close to failure" },
-    p: { zh: "每组做到“还能再做 1–3 次”时停下。太轻的重量练不出线条。", en: "End each set with 1–3 reps left in the tank. Weights that feel easy won't build definition." } },
-  { n: "6–15", u: { zh: "次 / 组", en: "reps / set" },
-    h: { zh: "中等次数区间", en: "Moderate rep ranges" },
-    p: { zh: "复合动作 6–10 次，孤立动作 10–15 次。“轻重量高次数才能练薄肌”是误区。", en: "6–10 reps on compound lifts, 10–15 on isolation work. 'Light weights to tone' is a myth." } },
-  { n: "1.6–2.2", u: { zh: "克蛋白质 / 公斤体重 / 天", en: "g protein / kg / day" },
-    h: { zh: "吃够蛋白质", en: "Eat enough protein" },
-    p: { zh: "60 kg 的人每天约 100–130 g 蛋白质，分配到 3–4 餐。", en: "About 100–130 g a day for a 60 kg person, spread over 3–4 meals." } },
-  { n: "−300~500", u: { zh: "大卡 / 天", en: "kcal / day" },
-    h: { zh: "温和热量缺口", en: "A gentle deficit" },
-    p: { zh: "需要减脂时小幅缺口，每周掉 0.5% 体重左右，尽量保住肌肉。", en: "When cutting, use a small deficit and lose about 0.5% of body weight a week to keep muscle." } },
-  { n: "7–9", u: { zh: "小时睡眠", en: "hours of sleep" },
-    h: { zh: "睡好才长肌肉", en: "Sleep to grow" },
-    p: { zh: "肌肉在休息时修复增长，睡眠不足会让力量和恢复都下降。", en: "Muscle repairs and grows during rest; short sleep cuts both strength and recovery." } }
-];

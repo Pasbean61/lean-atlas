@@ -18,8 +18,6 @@
   const view = () => window.LAView;
   const narrow = () => matchMedia("(max-width: 860px)").matches;
 
-  const exOwner = {};
-  for (const [id, m] of Object.entries(LA.muscles)) for (const k of m.ex) if (!exOwner[k]) exOwner[k] = id;
   $("#stat-videos").textContent = Object.keys(LA.ex).length + Object.keys(LA.zhVideo).length;
 
   /* ---------- stage framing: keep the body clear of the side panels ---------- */
@@ -87,6 +85,10 @@
     hotBtn = $("#mb-" + d.group); if (hotBtn) hotBtn.classList.add("hot");
   });
   addEventListener("la:pick", (e) => { tip.hidden = true; if (e.detail) open(e.detail.group); });
+  // the tooltip follows the 3D hover; drop it as soon as the pointer leaves the canvas or the page scrolls
+  const hideTip = () => { tip.hidden = true; if (view()) view().hover(null); };
+  $("#gl").addEventListener("pointerleave", hideTip);
+  addEventListener("scroll", hideTip, { passive: true });
 
   /* ---------- HUD ---------- */
   $$("[data-face]").forEach((b) => b.addEventListener("click", () => view() && view().face(b.dataset.face)));
@@ -244,36 +246,13 @@
     din.scrollTop = 0;
   }
 
-  /* ---------- rules + plan ---------- */
-  function renderRules() {
-    $("#rule-grid").innerHTML = LA.rules.map((r, i) => `
-      <article class="rule">
-        <span class="idx">${String(i + 1).padStart(2, "0")}</span>
-        <div class="n">${r.n}</div><span class="u">${esc(L(r.u))}</span>
-        <h3>${esc(L(r.h))}</h3><p>${esc(L(r.p))}</p>
-      </article>`).join("");
-  }
-  function renderPlan() {
-    $("#plan-grid").innerHTML = LA.plan.map((day) => `
-      <section class="day"><h3>${esc(L(day.d))}</h3><ol>${day.items.map((k) => {
-        const ex = LA.ex[k], owner = LA.muscles[exOwner[k]];
-        return `<li><button type="button" class="pbtn" data-ex="${k}"><b>${esc(L(ex.n))}</b><small>${esc(L(owner))}</small><em>${esc(RX(ex.rx))}</em></button></li>`;
-      }).join("")}</ol></section>`).join("");
-  }
-  $("#plan-grid").addEventListener("click", (e) => {
-    const b = e.target.closest(".pbtn");
-    if (!b) return;
-    open(exOwner[b.dataset.ex], b.dataset.ex);
-    $("#atlas").scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-
   /* ---------- language ---------- */
   function applyLang() {
     const t = T();
     document.documentElement.lang = state.lang === "zh" ? "zh-CN" : "en";
     $$("[data-t]").forEach((n) => { const v = t[n.dataset.t]; if (v != null) n.textContent = v; });
     $$(".lang button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === state.lang)));
-    renderIndex(); renderRules(); renderPlan();
+    renderIndex();
     if (state.sel) renderDrawer();
     fitLeft();
   }

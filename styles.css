@@ -83,7 +83,7 @@ a { color: inherit; }
 .bars::before { top: 0; height: 120px; background: linear-gradient(#000 0%, rgba(0, 0, 0, 0)); }
 .bars::after { bottom: 0; height: 150px; background: linear-gradient(rgba(0, 0, 0, 0), #000 92%); }
 
-.hud, .hint, .scroll { position: absolute; z-index: 2; }
+.hud, .hint { position: absolute; z-index: 2; }
 /* left column: title block on top, index pinned to the bottom. One flex column, so the two can never overlap;
    if the titles run out of room they are clipped at their own bottom edge, and app.js fitLeft trims them first. */
 .leftcol {
@@ -158,14 +158,7 @@ html[lang="zh-CN"] .hud button { font-family: var(--f-zh); font-size: 12px; }
   font: 400 11px/1 var(--f-mono); letter-spacing: .14em; color: var(--faint);
 }
 html[lang="zh-CN"] .hint { font-family: var(--f-zh); letter-spacing: .2em; }
-.scroll {
-  left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px;
-  text-decoration: none; font: 400 10px/1 var(--f-mono); letter-spacing: .3em; text-transform: uppercase; color: var(--faint); transition: opacity .4s;
-}
-html[lang="zh-CN"] .scroll { font-family: var(--f-zh); font-size: 11px; }
-.scroll i { width: 1px; height: 26px; background: linear-gradient(var(--mute), transparent); animation: drop 2.4s ease-in-out infinite; transform-origin: top; }
-@keyframes drop { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
-body.drawer-open .scroll, body.drawer-open .hint { opacity: 0; pointer-events: none; }
+body.drawer-open .hint { opacity: 0; pointer-events: none; }
 .hint { transition: opacity .4s; }
 
 .loader {
@@ -300,39 +293,8 @@ button.chip:hover { border-color: var(--gold); color: #fff; }
 .btn.ghost { border-color: var(--line); color: var(--mute); }
 .btn svg { width: 15px; height: 15px; fill: currentColor; }
 
-/* ---------- rules ---------- */
-.rules { padding-block: 130px 40px; position: relative; }
-.plan { padding-block: 110px 30px; }
-.sec-h { margin: 0; font: 600 clamp(44px, 5.6vw, 84px)/.95 var(--f-display); letter-spacing: -.015em; text-wrap: balance; }
-html[lang="zh-CN"] .sec-h { font: 900 clamp(34px, 4.4vw, 62px)/1.2 var(--f-display-zh); letter-spacing: .03em; }
-.sec-lede { max-width: 56ch; color: var(--mute); margin: 22px 0 0; font-size: 16px; }
-.rule-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 64px; border-top: 1px solid var(--line); }
-.rule { position: relative; padding: 34px 30px 40px 0; border-bottom: 1px solid var(--line); min-width: 0; }
-.rule:not(:nth-child(3n + 1)) { padding-left: 30px; border-left: 1px solid var(--line); }
-.rule .idx { font: 400 10px/1 var(--f-mono); letter-spacing: .2em; color: var(--faint); }
-.rule .n { margin-top: 22px; font: 600 clamp(48px, 5vw, 72px)/.9 var(--f-display); font-variant-numeric: lining-nums; white-space: nowrap; letter-spacing: -.01em; }
-.rule .u { display: block; margin-top: 12px; font: 400 10px/1.4 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--gold); }
-html[lang="zh-CN"] .rule .u { font-family: var(--f-zh); font-size: 12px; letter-spacing: .12em; }
-.rule h3 { margin: 26px 0 8px; font-size: 17px; font-weight: 600; }
-.rule p { margin: 0; color: var(--mute); font-size: 14px; max-width: 36ch; }
-
-/* ---------- plan ---------- */
-.plan-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 28px; margin-top: 60px; }
-.day { border-top: 1px solid var(--accent); padding-top: 18px; min-width: 0; }
-.day h3 { margin: 0 0 12px; font: 500 12px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
-html[lang="zh-CN"] .day h3 { font: 700 15px/1.3 var(--f-zh); letter-spacing: .1em; }
-.day ol { list-style: none; margin: 0; padding: 0; }
-.pbtn {
-  width: 100%; border: 0; border-top: 1px solid var(--line); background: none; cursor: pointer; text-align: left;
-  padding: 13px 2px; display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; transition: background .2s, padding .25s;
-}
-.pbtn:hover { background: rgba(232, 53, 43, .1); padding-left: 10px; }
-.pbtn b { font-weight: 500; font-size: 14px; min-width: 0; }
-.pbtn small { grid-column: 1; color: var(--faint); font-size: 12px; }
-.pbtn em { grid-row: 1 / span 2; grid-column: 2; align-self: center; font: 400 11px/1 var(--f-mono); font-style: normal; color: var(--gold); white-space: nowrap; }
-
 /* ---------- footer ---------- */
-.foot { padding-block: 60px 56px; color: var(--faint); font-size: 12px; border-top: 1px solid var(--line); margin-top: 110px; }
+.foot { padding-block: 60px 56px; color: var(--faint); font-size: 12px; border-top: 1px solid var(--line); margin-top: 0; }
 .foot p { margin: 5px 0; max-width: 80ch; }
 .mono { font-family: var(--f-mono); letter-spacing: .3em; margin-top: 22px !important; }
 
@@ -347,12 +309,6 @@ html[lang="zh-CN"] .stage.fit-2 .titles h1 { font-size: clamp(32px, 3.6vw, 50px)
 .stage.fit-4 .titles .eyebrow { display: none; }
 .stage.fit-4 .titles h1 { font-size: clamp(30px, 3.4vw, 44px); }
 @media (max-width: 1180px) { :root { --drawer-w: 420px; } .nav { gap: 20px; } }
-@media (max-width: 1000px) {
-  .rule-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .rule:not(:nth-child(3n + 1)) { padding-left: 0; border-left: 0; }
-  .rule:nth-child(even) { padding-left: 26px; border-left: 1px solid var(--line); }
-  .plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 28px; }
-}
 @media (max-width: 860px) {
   .nav { display: none; }
   .lang { margin-left: auto; }
@@ -364,7 +320,7 @@ html[lang="zh-CN"] .stage.fit-2 .titles h1 { font-size: clamp(32px, 3.6vw, 50px)
   .titles { position: absolute; z-index: 2; left: var(--gut); right: var(--gut); top: 84px; clip-path: none; }
   .titles h1 { font-size: clamp(38px, 11vw, 56px); }
   html[lang="zh-CN"] .titles h1 { font-size: clamp(32px, 9.4vw, 46px); }
-  .lede, .stats, .hint, .scroll { display: none; }
+  .lede, .stats, .hint { display: none; }
   .index { width: auto; padding: 6px var(--gut) 10px; }
   .grp { grid-template-columns: 64px 1fr; }
   .mbtn { padding: 7px 9px; font-size: 14px; }
@@ -380,12 +336,8 @@ html[lang="zh-CN"] .stage.fit-2 .titles h1 { font-size: clamp(32px, 3.6vw, 50px)
   .d-in { padding-block: 24px 36px; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); }
   .d-head h2 { font-size: 40px; }
   html[lang="zh-CN"] .d-head h2 { font-size: 32px; }
-  .rules { padding-block: 80px 20px; }
-  .plan { padding-block: 70px 10px; }
 }
 @media (max-width: 560px) {
-  .rule-grid, .plan-grid { grid-template-columns: minmax(0, 1fr); }
-  .rule:nth-child(even) { padding-left: 0; border-left: 0; }
   .brand i { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
