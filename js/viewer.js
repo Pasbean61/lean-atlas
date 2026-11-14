@@ -106,7 +106,7 @@ const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
 set.add(dust);
 
 
-/* ---------- sky: pure-black space, twinkling stars, and a slow romantic meteor shower ---------- */
+/* ---------- sky: pure-black space with twinkling stars ---------- */
 const STAR_N = coarse ? 2600 : 4800;
 const starGeo = new THREE.BufferGeometry();
 {
@@ -150,99 +150,6 @@ const starMat = new THREE.ShaderMaterial({
 const stars = new THREE.Points(starGeo, starMat);
 stars.frustumCulled = false; stars.renderOrder = -2;
 scene.add(stars);
-
-// meteors live in camera space on a plane 20 units out, so they always streak across the visible sky
-scene.add(camera);
-const MET_N = 18, MET_Z = -20;
-const metGeo = new THREE.BufferGeometry();
-const metPos = new Float32Array(MET_N * 4 * 3), metUv = new Float32Array(MET_N * 4 * 2), metCol = new Float32Array(MET_N * 4 * 4);
-const metIdx = [];
-for (let i = 0; i < MET_N; i++) {
-  const o = i * 4;
-  metUv.set([0, -1, 0, 1, 1, -1, 1, 1], o * 2);
-  metIdx.push(o, o + 2, o + 1, o + 1, o + 2, o + 3);
-}
-metGeo.setAttribute("position", new THREE.BufferAttribute(metPos, 3));
-metGeo.setAttribute("aUv", new THREE.BufferAttribute(metUv, 2));
-metGeo.setAttribute("aCol", new THREE.BufferAttribute(metCol, 4));
-metGeo.setIndex(metIdx);
-const meteorMesh = new THREE.Mesh(metGeo, new THREE.ShaderMaterial({
-  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-  vertexShader: "attribute vec2 aUv; attribute vec4 aCol; varying vec2 vUv; varying vec4 vCol; void main(){ vUv=aUv; vCol=aCol; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
-  fragmentShader: /* glsl */`
-    varying vec2 vUv; varying vec4 vCol;
-    void main(){
-      float along = clamp(vUv.x, 0.0, 1.0), across = min(abs(vUv.y), 1.0);   // clamp: pow() of a tiny negative is NaN, and bloom smears NaN into black blocks
-      float body = pow(along, 2.4) * exp(-across * across * 3.2);
-      float core = pow(along, 9.0) * exp(-across * across * 14.0);
-      float a = (body * 0.9 + core * 2.6) * vCol.a;
-      a = clamp(a, 0.0, 8.0);
-      gl_FragColor = vec4(vCol.rgb * a, a);
-    }`
-}));
-meteorMesh.frustumCulled = false; meteorMesh.renderOrder = -1;
-camera.add(meteorMesh);
-
-const headGeo = new THREE.BufferGeometry();
-const headPos = new Float32Array(MET_N * 3), headCol = new Float32Array(MET_N * 4);
-headGeo.setAttribute("position", new THREE.BufferAttribute(headPos, 3));
-headGeo.setAttribute("aCol", new THREE.BufferAttribute(headCol, 4));
-const heads = new THREE.Points(headGeo, new THREE.ShaderMaterial({
-  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-  uniforms: { uDPR: { value: DPR } },
-  vertexShader: "attribute vec4 aCol; uniform float uDPR; varying vec4 vCol; void main(){ vCol=aCol; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); gl_PointSize=18.0*uDPR*(0.6+0.4*aCol.a); }",
-  fragmentShader: "varying vec4 vCol; void main(){ vec2 p=gl_PointCoord-0.5; float d=length(p); float a=exp(-d*d*60.0)*1.6 + exp(-d*d*12.0)*0.25; a += (exp(-abs(p.x)*40.0)*exp(-abs(p.y)*6.0) + exp(-abs(p.y)*40.0)*exp(-abs(p.x)*6.0))*0.35; a*=vCol.a; gl_FragColor=vec4(vCol.rgb*a,a); }"
-}));
-heads.frustumCulled = false; heads.renderOrder = -1;
-camera.add(heads);
-
-const METEOR_TINTS = ["#fff4e8", "#ffc9d6", "#ffdcaa", "#d6e6ff", "#ffb8c2"].map((c) => new THREE.Color(c));
-const meteors = Array.from({ length: MET_N }, () => ({ on: false }));
-let nextMeteor = 0.6;
-function spawnMeteor(t) {
-  const m = meteors.find((x) => !x.on); if (!m) return;
-  const hy = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * -MET_Z, hx = hy * camera.aspect;
-  const ang = Math.PI + 0.42 + (Math.random() - 0.5) * 0.22;     // shared radiant: falling to the lower left
-  const big = Math.random() < 0.18;
-  Object.assign(m, {
-    on: true, t0: t,
-    x: (Math.random() * 1.6 - 0.35) * hx, y: (0.25 + Math.random() * 0.85) * hy,
-    dx: Math.cos(ang), dy: Math.sin(ang),
-    speed: (big ? 7 : 9) + Math.random() * 7, len: (big ? 3.4 : 1.6) + Math.random() * 2.2,
-    w: (big ? 0.07 : 0.04) + Math.random() * 0.025, life: (big ? 1.6 : 0.9) + Math.random() * 0.8,
-    col: METEOR_TINTS[Math.floor(Math.random() * METEOR_TINTS.length)], gain: big ? 2.4 : 1.5 + Math.random() * 0.6
-  });
-}
-function stepMeteors(t) {
-  if (!reduced && t > nextMeteor) {
-    spawnMeteor(t);
-    if (Math.random() < 0.14) { setTimeout(() => spawnMeteor(clock.elapsedTime), 180 + Math.random() * 300); setTimeout(() => spawnMeteor(clock.elapsedTime), 450 + Math.random() * 500); }
-    nextMeteor = t + 0.25 - Math.log(1 - Math.random()) * 0.7;
-  }
-  for (let i = 0; i < MET_N; i++) {
-    const m = meteors[i], o = i * 4;
-    let a = 0;
-    if (m.on) {
-      const age = t - m.t0, k = age / m.life;
-      if (k >= 1) m.on = false;
-      else {
-        a = Math.min(1, age / 0.12) * Math.pow(1 - k, 1.4) * m.gain;
-        const hxp = m.x + m.dx * m.speed * age, hyp = m.y + m.dy * m.speed * age;
-        const L = m.len * Math.min(1, age / 0.28), tx = hxp - m.dx * L, ty = hyp - m.dy * L;
-        const nx = -m.dy * m.w, ny = m.dx * m.w;
-        metPos.set([tx - nx * 0.15, ty - ny * 0.15, MET_Z, tx + nx * 0.15, ty + ny * 0.15, MET_Z,
-                    hxp - nx, hyp - ny, MET_Z, hxp + nx, hyp + ny, MET_Z], o * 3);
-        headPos.set([hxp, hyp, MET_Z + 0.01], i * 3);
-      }
-    }
-    if (!m.on) { for (let v = 0; v < 4; v++) metPos.set([0, 0, MET_Z], (o + v) * 3); headPos.set([0, 0, MET_Z], i * 3); }   // parked: zero-area, never at w = 0
-    const c = m.col || METEOR_TINTS[0];
-    for (let v = 0; v < 4; v++) metCol.set([c.r, c.g, c.b, a], (o + v) * 4);
-    headCol.set([c.r, c.g, c.b, a * 0.8], i * 4);
-  }
-  metGeo.attributes.position.needsUpdate = metGeo.attributes.aCol.needsUpdate = true;
-  headGeo.attributes.position.needsUpdate = headGeo.attributes.aCol.needsUpdate = true;
-}
 
 /* ---------- muscle material with procedural fibres ---------- */
 const FIBRE_GLSL = /* glsl */`
@@ -561,7 +468,6 @@ function frame() {
   starMat.uniforms.uTime.value = t;
   stars.rotation.y = -view.rot * 0.12 + t * 0.003;               // a little parallax as the body turns
   stars.rotation.x = 0.35;
-  stepMeteors(t);
   composer.render();
 }
 frame();
