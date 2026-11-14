@@ -38,7 +38,7 @@ renderer.toneMappingExposure = 1.04;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-const BG = new THREE.Color("#050406");
+const BG = new THREE.Color("#000000");
 const scene = new THREE.Scene();
 scene.background = BG;
 scene.fog = new THREE.Fog(BG, 7.5, 15);
@@ -62,7 +62,7 @@ const fill = new THREE.DirectionalLight("#8d9bff", 0.55); fill.position.set(-2.6
 const under = new THREE.PointLight("#ff4a3a", 1.4, 3.2, 1.6); under.position.set(0, 0.12, 0.9);
 scene.add(key, key.target, rimCool, rimHot, fill, under, new THREE.HemisphereLight("#b9c4ff", "#1a0b0b", 0.22));
 
-/* ---------- set: plinth, haze, light shaft, dust ---------- */
+/* ---------- set: floating plinth, rose halo, light shaft, sparkles ---------- */
 const set = new THREE.Group(); scene.add(set);
 const plinth = new THREE.Mesh(
   new THREE.CylinderGeometry(0.62, 0.66, 0.06, 128),
@@ -80,24 +80,17 @@ function radialTexture(stops, size = 256) {
   g.fillStyle = r; g.fillRect(0, 0, size, size);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
-const floor = new THREE.Mesh(new THREE.CircleGeometry(6, 64),
-  new THREE.MeshStandardMaterial({ color: "#09080b", roughness: 0.55, metalness: 0.4, envMapIntensity: 0.25 }));
-floor.rotation.x = -Math.PI / 2; floor.position.y = -0.06; floor.receiveShadow = true; set.add(floor);
-const pool = new THREE.Mesh(new THREE.CircleGeometry(2.6, 64), new THREE.MeshBasicMaterial({
-  map: radialTexture([[0, "rgba(255,70,50,.34)"], [0.35, "rgba(120,30,40,.12)"], [1, "rgba(0,0,0,0)"]]),
+const pool = new THREE.Mesh(new THREE.CircleGeometry(1.9, 64), new THREE.MeshBasicMaterial({
+  map: radialTexture([[0, "rgba(255,80,70,.22)"], [0.3, "rgba(150,40,70,.08)"], [1, "rgba(0,0,0,0)"]]),
   transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
 pool.rotation.x = -Math.PI / 2; pool.position.y = -0.055; set.add(pool);
 
-const haze = new THREE.Mesh(new THREE.PlaneGeometry(9, 6), new THREE.MeshBasicMaterial({
-  map: radialTexture([[0, "rgba(70,150,175,.30)"], [0.4, "rgba(60,40,90,.14)"], [1, "rgba(0,0,0,0)"]]),
-  transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
-haze.position.set(0, 1.25, -3.2); set.add(haze);
 
 const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 1.05, 3.4, 48, 1, true), new THREE.ShaderMaterial({
   transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
   uniforms: { uColor: { value: new THREE.Color("#ffe9cf") } },
   vertexShader: "varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ vUv=uv; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }",
-  fragmentShader: "uniform vec3 uColor; varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ float edge=pow(abs(dot(normalize(vN),normalize(vV))),2.2); float a=smoothstep(0.0,0.9,vUv.y)*edge*0.075; gl_FragColor=vec4(uColor*a,a); }"
+  fragmentShader: "uniform vec3 uColor; varying vec2 vUv; varying vec3 vN; varying vec3 vV; void main(){ float edge=pow(abs(dot(normalize(vN),normalize(vV))),2.2); float a=smoothstep(0.0,0.9,vUv.y)*edge*0.045; gl_FragColor=vec4(uColor*a,a); }"
 }));
 shaft.position.y = 1.7; set.add(shaft);
 
@@ -111,6 +104,145 @@ const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
   size: 0.012, map: radialTexture([[0, "rgba(255,235,215,1)"], [1, "rgba(255,235,215,0)"]], 64),
   transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
 set.add(dust);
+
+
+/* ---------- sky: pure-black space, twinkling stars, and a slow romantic meteor shower ---------- */
+const STAR_N = coarse ? 2600 : 4800;
+const starGeo = new THREE.BufferGeometry();
+{
+  const pos = new Float32Array(STAR_N * 3), col = new Float32Array(STAR_N * 3), size = new Float32Array(STAR_N), seed = new Float32Array(STAR_N);
+  const tints = [[1, 1, 1], [1, 0.94, 0.86], [0.82, 0.89, 1], [1, 0.82, 0.88], [1, 0.9, 0.72]];
+  for (let i = 0; i < STAR_N; i++) {
+    const u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, r = 30, q = Math.sqrt(1 - u * u);
+    pos.set([Math.cos(a) * q * r, u * r, Math.sin(a) * q * r], i * 3);
+    const tint = tints[Math.random() < 0.55 ? 0 : 1 + Math.floor(Math.random() * 4)];
+    const b = Math.pow(Math.random(), 2.6);                      // most stars faint, a few bright
+    col.set(tint.map((c) => c * (0.55 + b * 1.6)), i * 3);
+    size[i] = 1.6 + b * 4.2 + (Math.random() < 0.015 ? 3.5 : 0);
+    seed[i] = Math.random();
+  }
+  starGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  starGeo.setAttribute("aColor", new THREE.BufferAttribute(col, 3));
+  starGeo.setAttribute("aSize", new THREE.BufferAttribute(size, 1));
+  starGeo.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
+}
+const starMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: { uTime: { value: 0 }, uDPR: { value: DPR }, uTw: { value: reduced ? 0 : 1 } },
+  vertexShader: /* glsl */`
+    attribute vec3 aColor; attribute float aSize; attribute float aSeed;
+    uniform float uTime; uniform float uDPR; uniform float uTw; varying vec3 vCol;
+    void main(){
+      float tw = 1.0 - uTw * (0.35 + 0.35 * sin(uTime * (0.7 + aSeed * 2.6) + aSeed * 61.0)) * step(0.35, aSeed);
+      vCol = aColor * tw;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mv;
+      gl_PointSize = aSize * uDPR * (0.85 + 0.15 * tw);
+    }`,
+  fragmentShader: /* glsl */`
+    varying vec3 vCol;
+    void main(){
+      float d = length(gl_PointCoord - 0.5);
+      float a = exp(-d * d * 22.0) * 1.15 + 0.3 * smoothstep(0.5, 0.0, d);
+      gl_FragColor = vec4(vCol * a, a);
+    }`
+});
+const stars = new THREE.Points(starGeo, starMat);
+stars.frustumCulled = false; stars.renderOrder = -2;
+scene.add(stars);
+
+// meteors live in camera space on a plane 20 units out, so they always streak across the visible sky
+scene.add(camera);
+const MET_N = 18, MET_Z = -20;
+const metGeo = new THREE.BufferGeometry();
+const metPos = new Float32Array(MET_N * 4 * 3), metUv = new Float32Array(MET_N * 4 * 2), metCol = new Float32Array(MET_N * 4 * 4);
+const metIdx = [];
+for (let i = 0; i < MET_N; i++) {
+  const o = i * 4;
+  metUv.set([0, -1, 0, 1, 1, -1, 1, 1], o * 2);
+  metIdx.push(o, o + 2, o + 1, o + 1, o + 2, o + 3);
+}
+metGeo.setAttribute("position", new THREE.BufferAttribute(metPos, 3));
+metGeo.setAttribute("aUv", new THREE.BufferAttribute(metUv, 2));
+metGeo.setAttribute("aCol", new THREE.BufferAttribute(metCol, 4));
+metGeo.setIndex(metIdx);
+const meteorMesh = new THREE.Mesh(metGeo, new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  vertexShader: "attribute vec2 aUv; attribute vec4 aCol; varying vec2 vUv; varying vec4 vCol; void main(){ vUv=aUv; vCol=aCol; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
+  fragmentShader: /* glsl */`
+    varying vec2 vUv; varying vec4 vCol;
+    void main(){
+      float along = clamp(vUv.x, 0.0, 1.0), across = min(abs(vUv.y), 1.0);   // clamp: pow() of a tiny negative is NaN, and bloom smears NaN into black blocks
+      float body = pow(along, 2.4) * exp(-across * across * 3.2);
+      float core = pow(along, 9.0) * exp(-across * across * 14.0);
+      float a = (body * 0.9 + core * 2.6) * vCol.a;
+      a = clamp(a, 0.0, 8.0);
+      gl_FragColor = vec4(vCol.rgb * a, a);
+    }`
+}));
+meteorMesh.frustumCulled = false; meteorMesh.renderOrder = -1;
+camera.add(meteorMesh);
+
+const headGeo = new THREE.BufferGeometry();
+const headPos = new Float32Array(MET_N * 3), headCol = new Float32Array(MET_N * 4);
+headGeo.setAttribute("position", new THREE.BufferAttribute(headPos, 3));
+headGeo.setAttribute("aCol", new THREE.BufferAttribute(headCol, 4));
+const heads = new THREE.Points(headGeo, new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: { uDPR: { value: DPR } },
+  vertexShader: "attribute vec4 aCol; uniform float uDPR; varying vec4 vCol; void main(){ vCol=aCol; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); gl_PointSize=18.0*uDPR*(0.6+0.4*aCol.a); }",
+  fragmentShader: "varying vec4 vCol; void main(){ vec2 p=gl_PointCoord-0.5; float d=length(p); float a=exp(-d*d*60.0)*1.6 + exp(-d*d*12.0)*0.25; a += (exp(-abs(p.x)*40.0)*exp(-abs(p.y)*6.0) + exp(-abs(p.y)*40.0)*exp(-abs(p.x)*6.0))*0.35; a*=vCol.a; gl_FragColor=vec4(vCol.rgb*a,a); }"
+}));
+heads.frustumCulled = false; heads.renderOrder = -1;
+camera.add(heads);
+
+const METEOR_TINTS = ["#fff4e8", "#ffc9d6", "#ffdcaa", "#d6e6ff", "#ffb8c2"].map((c) => new THREE.Color(c));
+const meteors = Array.from({ length: MET_N }, () => ({ on: false }));
+let nextMeteor = 0.6;
+function spawnMeteor(t) {
+  const m = meteors.find((x) => !x.on); if (!m) return;
+  const hy = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * -MET_Z, hx = hy * camera.aspect;
+  const ang = Math.PI + 0.42 + (Math.random() - 0.5) * 0.22;     // shared radiant: falling to the lower left
+  const big = Math.random() < 0.18;
+  Object.assign(m, {
+    on: true, t0: t,
+    x: (Math.random() * 1.6 - 0.35) * hx, y: (0.25 + Math.random() * 0.85) * hy,
+    dx: Math.cos(ang), dy: Math.sin(ang),
+    speed: (big ? 7 : 9) + Math.random() * 7, len: (big ? 3.4 : 1.6) + Math.random() * 2.2,
+    w: (big ? 0.07 : 0.04) + Math.random() * 0.025, life: (big ? 1.6 : 0.9) + Math.random() * 0.8,
+    col: METEOR_TINTS[Math.floor(Math.random() * METEOR_TINTS.length)], gain: big ? 2.4 : 1.5 + Math.random() * 0.6
+  });
+}
+function stepMeteors(t) {
+  if (!reduced && t > nextMeteor) {
+    spawnMeteor(t);
+    if (Math.random() < 0.14) { setTimeout(() => spawnMeteor(clock.elapsedTime), 180 + Math.random() * 300); setTimeout(() => spawnMeteor(clock.elapsedTime), 450 + Math.random() * 500); }
+    nextMeteor = t + 0.25 - Math.log(1 - Math.random()) * 0.7;
+  }
+  for (let i = 0; i < MET_N; i++) {
+    const m = meteors[i], o = i * 4;
+    let a = 0;
+    if (m.on) {
+      const age = t - m.t0, k = age / m.life;
+      if (k >= 1) m.on = false;
+      else {
+        a = Math.min(1, age / 0.12) * Math.pow(1 - k, 1.4) * m.gain;
+        const hxp = m.x + m.dx * m.speed * age, hyp = m.y + m.dy * m.speed * age;
+        const L = m.len * Math.min(1, age / 0.28), tx = hxp - m.dx * L, ty = hyp - m.dy * L;
+        const nx = -m.dy * m.w, ny = m.dx * m.w;
+        metPos.set([tx - nx * 0.15, ty - ny * 0.15, MET_Z, tx + nx * 0.15, ty + ny * 0.15, MET_Z,
+                    hxp - nx, hyp - ny, MET_Z, hxp + nx, hyp + ny, MET_Z], o * 3);
+        headPos.set([hxp, hyp, MET_Z + 0.01], i * 3);
+      }
+    }
+    if (!m.on) { for (let v = 0; v < 4; v++) metPos.set([0, 0, MET_Z], (o + v) * 3); headPos.set([0, 0, MET_Z], i * 3); }   // parked: zero-area, never at w = 0
+    const c = m.col || METEOR_TINTS[0];
+    for (let v = 0; v < 4; v++) metCol.set([c.r, c.g, c.b, a], (o + v) * 4);
+    headCol.set([c.r, c.g, c.b, a * 0.8], i * 4);
+  }
+  metGeo.attributes.position.needsUpdate = metGeo.attributes.aCol.needsUpdate = true;
+  headGeo.attributes.position.needsUpdate = headGeo.attributes.aCol.needsUpdate = true;
+}
 
 /* ---------- muscle material with procedural fibres ---------- */
 const FIBRE_GLSL = /* glsl */`
@@ -360,9 +492,11 @@ const grade = new ShaderPass({
       vec2 d=vUv-0.5; float r2=dot(d,d);
       vec2 off=d*r2*0.012;
       vec3 c=vec3(texture2D(tDiffuse,vUv+off).r, texture2D(tDiffuse,vUv).g, texture2D(tDiffuse,vUv-off).b);
-      c*=mix(1.0,0.2,smoothstep(0.12,0.62,r2));
-      c=mix(c, c*vec3(1.05,0.99,0.95)+vec3(0.0,0.006,0.012), 0.6);
-      c+=(hash(vUv*vec2(1920.0,1080.0)+fract(uTime)*91.7)-0.5)*0.045;
+      c*=mix(1.0,0.45,smoothstep(0.16,0.7,r2));
+      c=mix(c, c*vec3(1.05,0.99,0.95), 0.6);
+      float luma=dot(c,vec3(0.299,0.587,0.114));
+      c+=(hash(vUv*vec2(1920.0,1080.0)+fract(uTime)*91.7)-0.5)*0.045*smoothstep(0.0,0.12,luma);
+      c=max(c,0.0);
       gl_FragColor=vec4(c*uFade,1.0);
     }`
 });
@@ -424,6 +558,10 @@ function frame() {
   p.needsUpdate = true;
   ring.material.color.setRGB(2.4, 0.45, 0.32).multiplyScalar(0.85 + Math.sin(t * 1.4) * 0.15);
   grade.uniforms.uTime.value = t;
+  starMat.uniforms.uTime.value = t;
+  stars.rotation.y = -view.rot * 0.12 + t * 0.003;               // a little parallax as the body turns
+  stars.rotation.x = 0.35;
+  stepMeteors(t);
   composer.render();
 }
 frame();
