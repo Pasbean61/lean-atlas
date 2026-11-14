@@ -7,7 +7,8 @@ Plain HTML/CSS/JS, no build step. Serve the folder over http (YouTube embeds nee
     python3 -m http.server 8810
 
 - `js/anatomy.js` – figure renderer (point data → smoothed SVG; female form via proportional warp)
-- `js/data.js` – muscles, 51 exercises with video ids, rules, weekly plan, UI strings
+- `js/data.js` – muscles, 51 exercises with English (YouTube) video ids, rules, weekly plan, UI strings
+- `js/videos-zh.js` – Chinese lesson per exercise (Bilibili), shown in 中文 mode
 - `js/app.js` – interaction, drawer, language, deep links (`#biceps`)
 
-Videos are embedded from YouTube; rights belong to their creators.
+English lessons are embedded from YouTube, Chinese lessons from Bilibili; rights belong to their creators.

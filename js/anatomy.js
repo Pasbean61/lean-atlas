@@ -87,10 +87,16 @@ window.LA = window.LA || {};
     { m: "calves", p: [[110, 548], [114, 568], [119, 584], [127, 584], [134, 566], [136, 550], [128, 556], [119, 554]] }
   ];
 
+  /* decorative, non-interactive muscles */
+  const DECO = {
+    front: [[[130, 89], [134, 92], [140, 104], [146, 116], [147, 121], [141, 119], [135, 106], [130, 97]]],
+    back: [[[133, 86], [138, 90], [142, 98], [138, 100], [133, 94]]]
+  };
+
   /* female-only replacement shapes (pre-warp coordinates) */
   const FEM = {
-    uc: [[147, 126], [126, 124], [108, 128], [102, 136], [108, 146], [126, 150], [147, 150]],
-    chest: [[147, 156], [130, 152], [112, 152], [100, 160], [94, 178], [98, 198], [110, 212], [128, 216], [142, 210], [148, 198]],
+    uc: [[146, 127], [128, 125], [111, 128], [104, 134], [110, 141], [128, 144], [146, 144]],
+    chest: [[143, 160], [136, 152], [124, 149], [110, 152], [100, 162], [96, 178], [100, 195], [111, 207], [125, 211], [138, 205], [144, 192], [145, 176]],
     a1: [[147, 222], [131, 222], [128, 236], [130, 250], [147, 252]],
     a2: [[147, 256], [130, 256], [129, 272], [131, 286], [147, 288]],
     a3: [[147, 292], [132, 292], [134, 312], [141, 328], [147, 334]],
@@ -183,30 +189,84 @@ window.LA = window.LA || {};
   }
 
   /* head + hair: mannequin head, short crop for him, top-knot for her */
-  function head(g, sex, view) {
+  function head(g, sex, view, uid) {
+    const hair = `url(#${uid}-hair)`;
     if (sex === "f") {
-      // top knot
-      el("ellipse", { cx: CX, cy: 6, rx: 15, ry: 11, class: "hair" }, g);
+      el("ellipse", { cx: CX, cy: 5, rx: 15, ry: 11, fill: hair, class: "hair" }, g);
+      el("path", { d: "M141 4 Q150 -2 159 4", class: "hair-ln" }, g);
       const cap = view === "front"
-        ? [[150, 10], [136, 13], [126, 22], [122, 36], [122, 50], [127, 44], [133, 30], [142, 25], [150, 24]]
+        ? [[150, 10], [136, 13], [126, 22], [122, 36], [122, 52], [127, 45], [133, 31], [142, 25], [150, 24]]
         : [[150, 10], [136, 13], [126, 22], [122, 38], [122, 58], [126, 76], [136, 86], [150, 88]];
-      el("path", { d: catmull(cap.concat(mirror(cap.slice(1, -1)).reverse())), class: "hair" }, g);
+      el("path", { d: catmull(cap.concat(mirror(cap.slice(1, -1)).reverse())), fill: hair, class: "hair" }, g);
+      if (view === "back") for (const x of [140, 160]) el("path", { d: `M${x} 18 Q${x + (x < 150 ? -4 : 4)} 50 ${x} 82`, class: "hair-ln" }, g);
     } else {
       const cap = view === "front"
         ? [[150, 10], [135, 12], [125, 21], [121, 34], [123, 44], [128, 32], [138, 25], [150, 23]]
         : [[150, 10], [135, 12], [125, 21], [121, 36], [122, 54], [128, 66], [140, 72], [150, 73]];
-      el("path", { d: catmull(cap.concat(mirror(cap.slice(1, -1)).reverse())), class: "hair" }, g);
+      el("path", { d: catmull(cap.concat(mirror(cap.slice(1, -1)).reverse())), fill: hair, class: "hair" }, g);
+    }
+    // ears
+    for (const sx of [1, -1]) {
+      const ex = CX - sx * (sex === "f" ? 28.5 : 31);
+      el("ellipse", { cx: ex, cy: 52, rx: 3.6, ry: 8, class: "ear" }, g);
     }
   }
 
+  /* principal axis of a point set → fibre direction + half extents */
+  function axis(pts) {
+    const n = pts.length;
+    const cx = pts.reduce((a, p) => a + p[0], 0) / n, cy = pts.reduce((a, p) => a + p[1], 0) / n;
+    let sxx = 0, syy = 0, sxy = 0;
+    for (const [x, y] of pts) { sxx += (x - cx) ** 2; syy += (y - cy) ** 2; sxy += (x - cx) * (y - cy); }
+    const th = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+    const u = [Math.cos(th), Math.sin(th)];
+    let v = [-u[1], u[0]];
+    if (v[0] + v[1] * 0.6 > 0) v = [-v[0], -v[1]];      // v points toward the light (upper-left)
+    let hl = 0, hw = 0;
+    for (const [x, y] of pts) {
+      hl = Math.max(hl, Math.abs((x - cx) * u[0] + (y - cy) * u[1]));
+      hw = Math.max(hw, Math.abs((x - cx) * v[0] + (y - cy) * v[1]));
+    }
+    return { cx, cy, u, v, hl, hw };
+  }
+  const r1 = (n) => Math.round(n * 10) / 10;
+
+  let UID = 0;
   /* public: render one figure into an <svg> */
   LA.drawFigure = function (svg, sex, view) {
-    svg.setAttribute("viewBox", "0 -12 300 652");
+    const uid = "f" + (++UID);
+    svg.setAttribute("viewBox", "0 -14 300 668");
     svg.innerHTML = "";
+    const defs = el("defs", {}, svg);
+    const outline = outlinePath(sex);
+
+    // per-figure defs: silhouette clip, rim light, body light, hair sheen
+    el("path", { d: outline, id: `${uid}-sil` }, el("clipPath", { id: `${uid}-clip` }, defs));
+    const grad = (tag, id, attrs, stops) => {
+      const g = el(tag, Object.assign({ id }, attrs), defs);
+      for (const [o, c, a] of stops) el("stop", { offset: o, "stop-color": c, "stop-opacity": a }, g);
+      return g;
+    };
+    grad("linearGradient", `${uid}-body`, { x1: 0, y1: 0, x2: 1, y2: 0 },
+      [[0, "#fff", .22], [.3, "#fff", .05], [.55, "#1b1640", 0], [1, "#1b1640", .42]]);
+    grad("linearGradient", `${uid}-depth`, { x1: 0, y1: 0, x2: 0, y2: 1 },
+      [[0, "#1b1640", 0], [.6, "#1b1640", 0], [1, "#1b1640", .28]]);
+    grad("linearGradient", `${uid}-rim`, { x1: 0, y1: 0, x2: 1, y2: .3 },
+      [[0, "#ffffff", .95], [.45, "#c8c6ff", .25], [1, "#ff8fa0", .55]]);
+    grad("linearGradient", `${uid}-hair`, { x1: 0, y1: 0, x2: 1, y2: 1 },
+      [[0, "#8a86ad", 1], [.5, "#55507a", 1], [1, "#2f2b4d", 1]]);
+
     const root = el("g", { class: "fig" }, svg);
-    el("ellipse", { cx: CX, cy: 628, rx: 72, ry: 7, class: "floor" }, root);
-    el("path", { d: outlinePath(sex), class: "skin" }, root);
-    head(root, sex, view);
+
+    // podium
+    const pod = el("g", { class: "podium" }, root);
+    el("ellipse", { cx: CX, cy: 630, rx: 96, ry: 15, class: "pod-base" }, pod);
+    el("ellipse", { cx: CX, cy: 630, rx: 96, ry: 15, class: "pod-ring" }, pod);
+    el("ellipse", { cx: CX, cy: 630, rx: 78, ry: 11, class: "pod-dash" }, pod);
+    el("ellipse", { cx: CX, cy: 628, rx: 46, ry: 6, class: "pod-shadow" }, pod);
+
+    el("path", { d: outline, class: "skin" }, root);
+    head(root, sex, view, uid);
 
     const details = el("g", { class: "detail" }, root);
     for (const ln of DETAIL[view]) {
@@ -215,8 +275,35 @@ window.LA = window.LA || {};
         el("path", { d: catmull(side.map((p) => warpPt(p, sex, false)), false), "stroke-width": ln.w }, details);
       }
     }
+    // fingers + toes
+    for (const sx of [1, -1]) {
+      const hand = [[40, 386, 41, 400], [44, 387, 46, 402], [48, 386, 50, 399]];
+      for (const [x1, y1, x2, y2] of hand) {
+        const a = warpPt([x1, y1], sex, true), b = warpPt([x2, y2], sex, true);
+        const m = (x) => (sx === 1 ? x : 2 * CX - x);
+        el("path", { d: `M${r1(m(a[0]))} ${y1}L${r1(m(b[0]))} ${y2}`, "stroke-width": .7 }, details);
+      }
+      if (view === "front") for (const x of [112, 118, 124, 130]) {
+        const a = warpPt([x, 616], sex, false);
+        const m = sx === 1 ? a[0] : 2 * CX - a[0];
+        el("path", { d: `M${r1(m)} 617L${r1(m)} 624`, "stroke-width": .6 }, details);
+      }
+    }
 
+    let n = 0;
     const muscles = el("g", { class: "muscles" }, root);
+    for (const pts of DECO[view]) {
+      const base = pts.map((p) => warpPt(p, sex, false));
+      for (const side of [base, mirror(base)]) {
+        const ax = axis(side), id = `${uid}-d${n++}`, w = ax.hw * 1.05;
+        grad("linearGradient", `${id}-g`, { gradientUnits: "userSpaceOnUse",
+          x1: r1(ax.cx + ax.v[0] * w), y1: r1(ax.cy + ax.v[1] * w), x2: r1(ax.cx - ax.v[0] * w), y2: r1(ax.cy - ax.v[1] * w) },
+          [[0, "#1b1640", .12], [.25, "#fff", .5], [.6, "#fff", 0], [1, "#1b1640", .35]]);
+        const g = el("g", { class: "deco" }, muscles);
+        el("path", { d: catmull(side), class: "db" }, g);
+        el("path", { d: catmull(side), fill: `url(#${id}-g)` }, g);
+      }
+    }
     const shapes = view === "front" ? FRONT : BACK;
     for (const s of shapes) {
       let pts = s.p;
@@ -224,12 +311,37 @@ window.LA = window.LA || {};
       const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
       const base = pts.map(([x, y]) => warpPt([cx + (x - cx) * INFLATE, cy + (y - cy) * INFLATE], sex, !!s.a));
       for (const side of [base, mirror(base)]) {
-        const g = el("g", { class: "m", "data-m": s.m }, muscles);
+        const id = `${uid}-${n++}`;
         const d = catmull(side);
+        const ax = axis(side);
+        // cylindrical shading across the fibres, lit from the upper-left
+        const w = ax.hw * 1.05;
+        grad("linearGradient", `${id}-g`, {
+          gradientUnits: "userSpaceOnUse",
+          x1: r1(ax.cx + ax.v[0] * w), y1: r1(ax.cy + ax.v[1] * w),
+          x2: r1(ax.cx - ax.v[0] * w), y2: r1(ax.cy - ax.v[1] * w)
+        }, [[0, "#1b1640", .18], [.22, "#fff", .55], [.48, "#fff", .06], [.78, "#1b1640", .16], [1, "#1b1640", .48]]);
+        el("path", { d }, el("clipPath", { id: `${id}-c` }, defs));
+        // fibre lines along the principal axis
+        let fd = "";
+        const L = ax.hl + 6;
+        for (let k = -ax.hw - 2; k <= ax.hw + 2; k += 2.1) {
+          const ox = ax.cx + ax.v[0] * k, oy = ax.cy + ax.v[1] * k;
+          fd += `M${r1(ox - ax.u[0] * L)} ${r1(oy - ax.u[1] * L)}L${r1(ox + ax.u[0] * L)} ${r1(oy + ax.u[1] * L)}`;
+        }
+        const g = el("g", { class: "m", "data-m": s.m }, muscles);
         el("path", { d, class: "mb" }, g);
-        el("path", { d, class: "ms" }, g);
+        el("path", { d: fd, class: "fib", "clip-path": `url(#${id}-c)` }, g);
+        el("path", { d, class: "ms", fill: `url(#${id}-g)` }, g);
+        el("path", { d, class: "mo" }, g);
       }
     }
+
+    // whole-body light: lit left, shadowed right, darker toward the feet
+    const light = el("g", { class: "light", "clip-path": `url(#${uid}-clip)` }, root);
+    el("rect", { x: 0, y: -14, width: 300, height: 668, fill: `url(#${uid}-body)` }, light);
+    el("rect", { x: 0, y: -14, width: 300, height: 668, fill: `url(#${uid}-depth)` }, light);
+    el("path", { d: outline, class: "rim", stroke: `url(#${uid}-rim)` }, root);
     return svg;
   };
 
@@ -241,26 +353,32 @@ window.LA = window.LA || {};
     return v;
   };
 
-  /* shared <defs>: shading + glow, referenced by every figure */
+  /* shared <defs> referenced by every figure */
   LA.defs = `
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
-      <radialGradient id="shade" cx="38%" cy="32%" r="78%">
-        <stop offset="0" stop-color="#fff" stop-opacity=".34"/>
-        <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
-        <stop offset="1" stop-color="#1a1640" stop-opacity=".30"/>
-      </radialGradient>
-      <linearGradient id="skinGrad" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="var(--skin-hi)"/>
-        <stop offset="1" stop-color="var(--skin-lo)"/>
+      <linearGradient id="skinGrad" x1="0" y1="0" x2=".6" y2="1">
+        <stop offset="0" stop-color="#e9e6f1"/>
+        <stop offset=".55" stop-color="#c9c5d9"/>
+        <stop offset="1" stop-color="#9e99b6"/>
       </linearGradient>
-      <radialGradient id="floorGrad">
-        <stop offset="0" stop-color="var(--glow)" stop-opacity=".45"/>
-        <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+      <radialGradient id="podGrad" cx="50%" cy="40%" r="60%">
+        <stop offset="0" stop-color="#3a3580" stop-opacity=".9"/>
+        <stop offset=".7" stop-color="#16143a" stop-opacity=".9"/>
+        <stop offset="1" stop-color="#0b0a1f" stop-opacity=".2"/>
       </radialGradient>
+      <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#7b7bff" stop-opacity=".2"/>
+        <stop offset=".5" stop-color="#ff7a8c" stop-opacity="1"/>
+        <stop offset="1" stop-color="#7b7bff" stop-opacity=".2"/>
+      </linearGradient>
+      <filter id="raise" x="-10%" y="-5%" width="120%" height="110%">
+        <feDropShadow dx=".4" dy=".9" stdDeviation=".9" flood-color="#14102e" flood-opacity=".45"/>
+      </filter>
+      <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
       <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur in="SourceAlpha" stdDeviation="3.2" result="b"/>
-        <feFlood flood-color="#ff5a6e" flood-opacity=".85"/>
+        <feGaussianBlur in="SourceAlpha" stdDeviation="3.4" result="b"/>
+        <feFlood flood-color="#ff4d64" flood-opacity=".9"/>
         <feComposite in2="b" operator="in" result="g"/>
         <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>

@@ -136,6 +136,7 @@
     x: '<svg viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13"/></svg>',
     play: '<svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"/></svg>',
     yt: '<svg viewBox="0 0 24 24"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12a31 31 0 0 0 .4 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8zM9.7 15.1V8.9l5.8 3.1z"/></svg>',
+    bili: '<svg viewBox="0 0 24 24"><path d="M7.2 2.6l2.6 2.6h4.4l2.6-2.6 1.3 1.3-1.3 1.3H19a3 3 0 0 1 3 3v9.6a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V8.2a3 3 0 0 1 3-3h2.2L5.9 3.9zM5 7.2a1 1 0 0 0-1 1v9.6a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8.2a1 1 0 0 0-1-1zm3 3.3l1.2.1v2.6l-1.2.1zm8 0l-1.2.1v2.6l1.2.1z"/></svg>',
     search: '<svg viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>'
   };
 
@@ -149,7 +150,16 @@
     const dots = [1, 2, 3].map((i) => `<i class="${i <= ex.lv ? "f" : ""}"></i>`).join("");
     const also = ex.also.filter((s) => s !== id).map((s) =>
       `<button type="button" class="chip" data-go="${s}">${esc(L(LA.muscles[s]))}</button>`).join("");
-    const biliQ = encodeURIComponent(ex.n.zh + " 教学");
+    // language decides the lesson: Bilibili (Chinese) or YouTube (English)
+    const zv = LA.zhVideo[state.ex];
+    const zh = state.lang === "zh" && zv;
+    const vid = zh
+      ? { pic: zv.pic, ch: zv.ch, d: zv.d, src: "Bilibili",
+          url: `https://www.bilibili.com/video/${zv.bv}`,
+          embed: `https://player.bilibili.com/player.html?bvid=${zv.bv}&autoplay=1&danmaku=0&high_quality=1` }
+      : { pic: `https://i.ytimg.com/vi/${ex.v}/hqdefault.jpg`, ch: ex.ch, d: ex.d, src: "YouTube",
+          url: `https://www.youtube.com/watch?v=${ex.v}`,
+          embed: `https://www.youtube-nocookie.com/embed/${ex.v}?autoplay=1&rel=0&modestbranding=1&playsinline=1` };
 
     din.innerHTML = `
       <div class="d-head">
@@ -166,12 +176,14 @@
       <h3 class="d-h3">${t.exercises}</h3>
       <div class="tabs" role="tablist">${tabs}</div>
       <div class="video" id="video">
-        <button type="button" class="poster" id="poster" style="background-image:url('https://i.ytimg.com/vi/${ex.v}/hqdefault.jpg')" aria-label="${t.play}: ${esc(L(ex.n))}">
+        <button type="button" class="poster" id="poster" aria-label="${t.play}: ${esc(L(ex.n))}">
+          <img src="${vid.pic}" alt="" referrerpolicy="no-referrer" loading="lazy">
+          <span class="src ${zh ? "bili" : "yt"}">${vid.src}</span>
           <span class="pl">${ICON.play}</span>
-          <span class="cap"><span>${esc(L(ex.n))}</span><span>${ex.d}</span></span>
+          <span class="cap"><span>${esc(L(ex.n))}</span><span>${vid.d}</span></span>
         </button>
       </div>
-      <p class="credit">${t.credit} ${esc(ex.ch)} · YouTube · ${ex.d}</p>
+      <p class="credit">${t.credit} ${esc(vid.ch)} · ${vid.src} · ${vid.d}</p>
       <dl class="meta">
         <div><dt>${t.sets}</dt><dd class="num">${esc(RX(ex.rx))}</dd></div>
         <div><dt>${t.rest}</dt><dd class="num">${esc(ex.rest)}</dd></div>
@@ -182,15 +194,15 @@
       <ol class="cues">${L(ex.cues).map((c) => `<li>${esc(c)}</li>`).join("")}</ol>
       ${also ? `<h3 class="d-h3">${t.alsoWorks}</h3><div class="also">${also}</div>` : ""}
       <div class="links">
-        <a class="btn" href="https://www.youtube.com/watch?v=${ex.v}" target="_blank" rel="noopener">${ICON.yt}${t.openYt}</a>
-        <a class="btn" href="https://search.bilibili.com/all?keyword=${biliQ}" target="_blank" rel="noopener">${ICON.search}${t.searchBili}</a>
+        <a class="btn" href="${vid.url}" target="_blank" rel="noopener">${zh ? ICON.bili : ICON.yt}${zh ? t.openBili : t.openYt}</a>
+        ${zh ? `<a class="btn ghost" href="https://www.youtube.com/watch?v=${ex.v}" target="_blank" rel="noopener">${ICON.yt}${t.altEn}</a>` : ""}
       </div>`;
 
     $("#d-close").addEventListener("click", close);
     $$(".tab", din).forEach((b) => b.addEventListener("click", () => { state.ex = b.dataset.k; renderDrawer(); paintSelection(); }));
     $$("[data-go]", din).forEach((b) => b.addEventListener("click", () => open(b.dataset.go)));
     $("#poster").addEventListener("click", () => {
-      $("#video").innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${ex.v}?autoplay=1&rel=0&modestbranding=1&playsinline=1${state.lang === "zh" ? "&cc_load_policy=1&cc_lang_pref=zh-Hans&hl=zh-CN" : ""}" title="${esc(L(ex.n))}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+      $("#video").innerHTML = `<iframe src="${vid.embed}" title="${esc(L(ex.n))}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen scrolling="no" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
     });
   }
 
