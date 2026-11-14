@@ -35,6 +35,19 @@
   }
   addEventListener("resize", frameStage);
 
+  /* left column: the title block steps down (stats → lede → smaller title) until it clears the index */
+  const stageBox = $("#atlas"), titlesEl = $("#titles"), indexBox = $(".index");
+  function fitLeft() {
+    stageBox.classList.remove("fit-1", "fit-2", "fit-3", "fit-4");
+    if (narrow()) return;
+    for (let i = 1; i <= 4; i++) {
+      if (titlesEl.getBoundingClientRect().bottom + 30 <= indexBox.getBoundingClientRect().top) break;
+      stageBox.classList.add("fit-" + i);
+    }
+  }
+  addEventListener("resize", fitLeft);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitLeft);
+
   /* ---------- loader + viewer events ---------- */
   const loader = $("#loader");
   addEventListener("la:progress", (e) => {
@@ -231,6 +244,7 @@
     $$(".lang button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === state.lang)));
     renderIndex(); renderRules(); renderPlan();
     if (state.sel) renderDrawer();
+    fitLeft();
   }
   $$(".lang button").forEach((b) => b.addEventListener("click", () => {
     state.lang = b.dataset.lang; store.set("la-lang", state.lang); applyLang();

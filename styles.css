@@ -95,7 +95,7 @@ body.model-ready .titles > :nth-child(3) { transition-delay: .3s; }
 body.model-ready .titles > :nth-child(4) { transition-delay: .45s; }
 body.drawer-open .titles { opacity: 0; transform: translateY(-10px); }
 .titles h1 {
-  margin: 0; font: 600 clamp(52px, 6.1vw, 98px)/.92 var(--f-display); letter-spacing: -.015em; text-wrap: balance;
+  margin: 0; font: 600 clamp(48px, 5.4vw, 88px)/.94 var(--f-display); letter-spacing: -.015em; text-wrap: balance;
   text-shadow: 0 2px 40px rgba(0, 0, 0, .6);
 }
 html[lang="zh-CN"] .titles h1 { font: 900 clamp(42px, 4.9vw, 78px)/1.14 var(--f-display-zh); letter-spacing: .02em; }
@@ -309,8 +309,15 @@ html[lang="zh-CN"] .day h3 { font: 700 15px/1.3 var(--f-zh); letter-spacing: .1e
 .mono { font-family: var(--f-mono); letter-spacing: .3em; margin-top: 22px !important; }
 
 /* ---------- responsive ---------- */
-@media (max-height: 800px) and (min-width: 861px) { .stats { display: none; } .titles { top: 88px; } }
-@media (max-height: 700px) and (min-width: 861px) { .lede { display: none; } }
+/* the title block gives way to the index when the two would collide (classes set by app.js fitLeft) */
+.stage.fit-1 .stats { display: none; }
+.stage.fit-2 .titles { top: 84px; }
+.stage.fit-2 .titles h1 { font-size: clamp(36px, 4.2vw, 60px); }
+html[lang="zh-CN"] .stage.fit-2 .titles h1 { font-size: clamp(32px, 3.6vw, 50px); }
+.stage.fit-2 .lede { margin-top: 16px; }
+.stage.fit-3 .lede { display: none; }
+.stage.fit-4 .titles .eyebrow { display: none; }
+.stage.fit-4 .titles h1 { font-size: clamp(30px, 3.4vw, 44px); }
 @media (max-width: 1180px) { :root { --drawer-w: 420px; } .nav { gap: 20px; } }
 @media (max-width: 1000px) {
   .rule-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
