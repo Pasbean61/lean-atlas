@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lean Atlas 薄肌图谱</title>
+<meta name="description" content="Interactive gym muscle atlas: tap any muscle on the male or female model to watch exercise tutorials. 交互式薄肌训练图谱。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="sky" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="#top" aria-label="Lean Atlas">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3c4 0 6 3 6 6s-2 5-2 5l5 3-3 12h-4l-2-8-2 8h-4L7 17l5-3s-2-2-2-5 2-6 6-6Z"/></svg>
+      <span><b>LEAN ATLAS</b><i>薄肌图谱</i></span>
+    </a>
+    <nav class="nav">
+      <a href="#atlas" data-t="navAtlas"></a>
+      <a href="#rules" data-t="navRules"></a>
+      <a href="#plan" data-t="navPlan"></a>
+    </nav>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-zh" data-lang="zh">中</button>
+      <button type="button" id="lang-en" data-lang="en">EN</button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero wrap">
+    <p class="eyebrow" data-t="eyebrow"></p>
+    <h1><span data-t="h1a"></span><em data-t="h1b"></em></h1>
+    <p class="lede" data-t="lede"></p>
+    <ul class="stats">
+      <li><b>23</b><span data-t="stat1"></span></li>
+      <li><b id="stat-videos">51</b><span data-t="stat2"></span></li>
+      <li><b>2 × 2</b><span data-t="stat3"></span></li>
+    </ul>
+  </section>
+
+  <section id="atlas" class="atlas">
+    <div class="wrap atlas-grid">
+      <aside class="index" aria-labelledby="index-h">
+        <h2 id="index-h" class="label" data-t="index"></h2>
+        <div id="index"></div>
+      </aside>
+
+      <div class="stage">
+        <div class="controls">
+          <div class="seg" role="group" aria-label="View">
+            <button type="button" id="view-front" data-view="front" data-t="front" aria-pressed="true"></button>
+            <button type="button" id="view-back" data-view="back" data-t="back" aria-pressed="false"></button>
+          </div>
+          <p class="hint" data-t="hint"></p>
+        </div>
+        <div class="figures" id="figures">
+          <figure class="body" data-sex="m">
+            <div class="flip">
+              <svg class="face front" role="img" aria-label="Male front"></svg>
+              <svg class="face back" role="img" aria-label="Male back"></svg>
+            </div>
+            <figcaption><span data-t="male"></span><small>♂ 180 cm</small></figcaption>
+          </figure>
+          <figure class="body" data-sex="f">
+            <div class="flip">
+              <svg class="face front" role="img" aria-label="Female front"></svg>
+              <svg class="face back" role="img" aria-label="Female back"></svg>
+            </div>
+            <figcaption><span data-t="female"></span><small>♀ 168 cm</small></figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="rules" class="rules wrap">
+    <p class="eyebrow" data-t="rulesEyebrow"></p>
+    <h2 class="sec-h" data-t="rulesH"></h2>
+    <p class="sec-lede" data-t="rulesLede"></p>
+    <div class="rule-grid" id="rule-grid"></div>
+  </section>
+
+  <section id="plan" class="plan wrap">
+    <p class="eyebrow" data-t="planEyebrow"></p>
+    <h2 class="sec-h" data-t="planH"></h2>
+    <p class="sec-lede" data-t="planLede"></p>
+    <div class="plan-grid" id="plan-grid"></div>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <p data-t="foot1"></p>
+  <p data-t="foot2"></p>
+  <p class="mono">LEAN ATLAS · 2026</p>
+</footer>
+
+<div class="tip" id="tip" hidden></div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="false" aria-labelledby="d-title" hidden>
+  <div class="d-in" id="d-in"></div>
+</aside>
+
+<script src="js/data.js"></script>
+<script src="js/anatomy.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
