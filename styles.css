@@ -83,9 +83,16 @@ a { color: inherit; }
 .bars::before { top: 0; height: 150px; background: linear-gradient(#050406 0%, rgba(5, 4, 6, .0)); }
 .bars::after { bottom: 0; height: 190px; background: linear-gradient(rgba(5, 4, 6, 0), #050406 92%); }
 
-.titles, .index, .hud, .hint, .scroll { position: absolute; z-index: 2; }
+.hud, .hint, .scroll { position: absolute; z-index: 2; }
+/* left column: title block on top, index pinned to the bottom. One flex column, so the two can never overlap;
+   if the titles run out of room they are clipped at their own bottom edge, and app.js fitLeft trims them first. */
+.leftcol {
+  position: absolute; z-index: 2; left: max(var(--gut), env(safe-area-inset-left, 0px));
+  top: clamp(92px, 15vh, 150px); bottom: 74px; width: min(440px, 33vw);
+  display: flex; flex-direction: column; justify-content: space-between; gap: 32px; pointer-events: none;
+}
 .titles {
-  left: max(var(--gut), env(safe-area-inset-left, 0px)); top: clamp(92px, 15vh, 150px); width: min(440px, 33vw);
+  flex: 0 1 auto; min-height: 0; clip-path: inset(-60px -60px 0 -60px);
   transition: opacity .6s ease, transform .6s ease; pointer-events: none;
 }
 .titles > * { opacity: 0; transform: translateY(14px); }
@@ -115,10 +122,7 @@ html[lang="en"] .lede { max-width: 40ch; }
 .stats span { font: 400 11px/1.3 var(--f-body); color: var(--mute); letter-spacing: .06em; }
 html[lang="zh-CN"] .stats span { font-family: var(--f-zh); }
 
-.index {
-  left: max(var(--gut), env(safe-area-inset-left, 0px)); bottom: 74px; width: min(440px, 33vw);
-  opacity: 0; transition: opacity 1s ease .6s;
-}
+.index { flex: none; pointer-events: auto; opacity: 0; transition: opacity 1s ease .6s; }
 body.model-ready .index { opacity: 1; }
 @media (min-width: 861px) and (max-width: 1499px) { body.drawer-open .index { opacity: 0; pointer-events: none; transition-delay: 0s; transition-duration: .35s; } }
 .label { margin: 0 0 12px; font: 500 10px/1 var(--f-mono); letter-spacing: .3em; text-transform: uppercase; color: var(--faint); }
@@ -309,9 +313,9 @@ html[lang="zh-CN"] .day h3 { font: 700 15px/1.3 var(--f-zh); letter-spacing: .1e
 .mono { font-family: var(--f-mono); letter-spacing: .3em; margin-top: 22px !important; }
 
 /* ---------- responsive ---------- */
-/* the title block gives way to the index when the two would collide (classes set by app.js fitLeft) */
+/* the title block gives way to the index when space runs short (classes set by app.js fitLeft) */
 .stage.fit-1 .stats { display: none; }
-.stage.fit-2 .titles { top: 84px; }
+.stage.fit-2 .leftcol { top: 84px; }
 .stage.fit-2 .titles h1 { font-size: clamp(36px, 4.2vw, 60px); }
 html[lang="zh-CN"] .stage.fit-2 .titles h1 { font-size: clamp(32px, 3.6vw, 50px); }
 .stage.fit-2 .lede { margin-top: 16px; }
@@ -332,11 +336,12 @@ html[lang="zh-CN"] .stage.fit-2 .titles h1 { font-size: clamp(32px, 3.6vw, 50px)
   .gl-wrap { position: relative; inset: auto; height: 76vh; height: 76svh; min-height: 480px; }
   .bars { inset: 0 0 auto; height: 76vh; height: 76svh; min-height: 480px; }
   .bars::after { height: 120px; }
-  .titles { top: 84px; width: auto; right: var(--gut); }
+  .leftcol { display: contents; }
+  .titles { position: absolute; z-index: 2; left: var(--gut); right: var(--gut); top: 84px; clip-path: none; }
   .titles h1 { font-size: clamp(38px, 11vw, 56px); }
   html[lang="zh-CN"] .titles h1 { font-size: clamp(32px, 9.4vw, 46px); }
   .lede, .stats, .hint, .scroll { display: none; }
-  .index { position: static; width: auto; padding: 6px var(--gut) 10px; }
+  .index { width: auto; padding: 6px var(--gut) 10px; }
   .grp { grid-template-columns: 64px 1fr; }
   .mbtn { padding: 7px 9px; font-size: 14px; }
   .hud { top: calc(max(76svh, 480px) - 58px); bottom: auto; right: var(--gut); left: var(--gut); justify-content: space-between; }

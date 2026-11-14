@@ -35,18 +35,27 @@
   }
   addEventListener("resize", frameStage);
 
-  /* left column: the title block steps down (stats → lede → smaller title) until it clears the index */
-  const stageBox = $("#atlas"), titlesEl = $("#titles"), indexBox = $(".index");
+  /* left column: titles and index share one flex column (they cannot overlap). If the titles need more
+     height than the column leaves them, step them down: stats → smaller title → lede → eyebrow.
+     Re-runs whenever the column, the index or the fonts change size, not just once. */
+  const stageBox = $("#atlas"), titlesEl = $("#titles"), indexBox = $(".index"), leftCol = $("#leftcol");
+  const titlesNeed = () => {
+    let h = 0;
+    for (const c of titlesEl.children) if (c.offsetParent) h = Math.max(h, c.offsetTop - titlesEl.offsetTop + c.offsetHeight);
+    return h;
+  };
   function fitLeft() {
     stageBox.classList.remove("fit-1", "fit-2", "fit-3", "fit-4");
-    if (narrow()) return;
-    for (let i = 1; i <= 4; i++) {
-      if (titlesEl.getBoundingClientRect().bottom + 30 <= indexBox.getBoundingClientRect().top) break;
-      stageBox.classList.add("fit-" + i);
+    if (!narrow()) {
+      for (let i = 1; i <= 4 && titlesNeed() > titlesEl.clientHeight + 1; i++) stageBox.classList.add("fit-" + i);
     }
   }
   addEventListener("resize", fitLeft);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitLeft);
+  if ("ResizeObserver" in window) {
+    const ro = new ResizeObserver(() => fitLeft());
+    [leftCol, indexBox, titlesEl.querySelector("h1")].forEach((el) => ro.observe(el));
+  }
+  if (document.fonts) { document.fonts.ready.then(fitLeft); document.fonts.addEventListener?.("loadingdone", fitLeft); }
 
   /* ---------- loader + viewer events ---------- */
   const loader = $("#loader");
