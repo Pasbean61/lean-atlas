@@ -133,6 +133,7 @@
     if (location.hash !== "#" + id) history.replaceState(null, "", "#" + id);
   }
   function close() {
+    theater(false);
     state.sel = null; state.ex = null;
     drawer.classList.remove("open");
     document.body.classList.remove("drawer-open");
@@ -144,16 +145,30 @@
     history.replaceState(null, "", location.pathname + location.search);
   }
   scrim.addEventListener("click", close);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.sel) close(); });
+  function theater(on) {
+    document.body.classList.toggle("theater", on);
+    const b = $("#vbig"), t = T();
+    if (b) { b.setAttribute("aria-pressed", on); b.title = on ? t.shrink : t.enlarge; b.setAttribute("aria-label", b.title); b.lastChild.textContent = b.title; }
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (document.body.classList.contains("theater")) theater(false); else if (state.sel) close();
+  });
+  document.addEventListener("click", (e) => {
+    if (document.body.classList.contains("theater") && !e.target.closest("#video")) theater(false);
+  });
 
   const ICON = {
     x: '<svg viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13"/></svg>',
     play: '<svg viewBox="0 0 24 24"><path d="M6 4l15 8-15 8z"/></svg>',
+    grow: '<svg class="i-grow" viewBox="0 0 16 16" fill="none"><path d="M10 2h4v4M6 14H2v-4M14 2l-5 5M2 14l5-5"/></svg>',
+    shrink: '<svg class="i-shrink" viewBox="0 0 16 16" fill="none"><path d="M13 7H9V3M3 9h4v4M9 7l5-5M7 9l-5 5"/></svg>',
     yt: '<svg viewBox="0 0 24 24"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12a31 31 0 0 0 .4 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8zM9.7 15.1V8.9l5.8 3.1z"/></svg>',
     bili: '<svg viewBox="0 0 24 24"><path d="M7.2 2.6l2.6 2.6h4.4l2.6-2.6 1.3 1.3-1.3 1.3H19a3 3 0 0 1 3 3v9.6a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V8.2a3 3 0 0 1 3-3h2.2L5.9 3.9zM5 7.2a1 1 0 0 0-1 1v9.6a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8.2a1 1 0 0 0-1-1zm3 3.3l1.2.1v2.6l-1.2.1zm8 0l-1.2.1v2.6l1.2.1z"/></svg>'
   };
 
   function renderDrawer() {
+    theater(false);
     const id = state.sel, m = LA.muscles[id], t = T();
     const region = LA.regions.find((r) => r.id === m.r);
     const ex = LA.ex[state.ex];
@@ -189,12 +204,15 @@
       <h3 class="d-h3">${t.exercises}</h3>
       <div class="tabs" role="tablist">${tabs}</div>
       <div class="video" id="video">
-        <button type="button" class="poster" id="poster" aria-label="${t.play}: ${esc(L(ex.n))}">
-          <img src="${vid.pic}" alt="" referrerpolicy="no-referrer">
-          <span class="src ${zh ? "bili" : "yt"}">${vid.src}</span>
-          <span class="pl">${ICON.play}</span>
-          <span class="cap"><span>${esc(L(ex.n))}</span><span>${vid.d}</span></span>
-        </button>
+        <div class="vstage" id="vstage">
+          <button type="button" class="poster" id="poster" aria-label="${t.play}: ${esc(L(ex.n))}">
+            <img src="${vid.pic}" alt="" referrerpolicy="no-referrer">
+            <span class="src ${zh ? "bili" : "yt"}">${vid.src}</span>
+            <span class="pl">${ICON.play}</span>
+            <span class="cap"><span>${esc(L(ex.n))}</span><span>${vid.d}</span></span>
+          </button>
+        </div>
+        <button type="button" class="vbig" id="vbig" aria-pressed="false" title="${t.enlarge}" aria-label="${t.enlarge}">${ICON.grow}${ICON.shrink}<span>${t.enlarge}</span></button>
       </div>
       <p class="credit">${t.credit} ${esc(vid.ch)} · ${vid.src} · ${vid.d}</p>
       <dl class="meta">
@@ -216,9 +234,13 @@
       state.ex = b.dataset.k; renderDrawer(); if (view()) view().setSecondary(LA.ex[state.ex].also);
     }));
     $$("[data-go]", din).forEach((b) => b.addEventListener("click", () => open(b.dataset.go)));
-    $("#poster").addEventListener("click", () => {
-      $("#video").innerHTML = `<iframe src="${vid.embed}" title="${esc(L(ex.n))}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen scrolling="no" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
-    });
+    const play = () => {
+      if (!$("#poster")) return;
+      $("#vstage").innerHTML = `<iframe src="${vid.embed}" title="${esc(L(ex.n))}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen scrolling="no" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+    };
+    $("#poster").addEventListener("click", play);
+    // enlarge: the player grows in place into a centred cinema frame (no reparenting, so playback keeps going)
+    $("#vbig").addEventListener("click", (e) => { e.stopPropagation(); theater(!document.body.classList.contains("theater")); play(); });
     din.scrollTop = 0;
   }
 

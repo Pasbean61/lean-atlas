@@ -234,8 +234,32 @@ html[lang="zh-CN"] .d-h3 { font-family: var(--f-zh); font-size: 11px; }
 }
 .tab:hover { color: var(--ink); }
 .tab[aria-selected="true"] { color: #fff; border-color: var(--accent); }
-.video { position: relative; margin-top: 18px; aspect-ratio: 16 / 9; width: 100%; max-width: 100%; overflow: hidden; background: #000; border: 1px solid var(--line); }
+.video { position: relative; margin-top: 18px; aspect-ratio: 16 / 9; width: 100%; max-width: 100%; background: #000; border: 1px solid var(--line); }
 .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.vstage { position: absolute; inset: 0; overflow: hidden; }
+/* enlarge control sits just outside the frame (below it; above it when enlarged) so it never covers player controls */
+.vbig {
+  position: absolute; z-index: 3; top: calc(100% + 10px); right: -1px; height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 7px;
+  cursor: pointer; color: #e9dfd8; background: none; border: 1px solid var(--line);
+  font: 500 10px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; transition: color .2s, background .2s, border-color .2s;
+}
+html[lang="zh-CN"] .vbig { font: 500 12px/1 var(--f-zh); letter-spacing: .08em; }
+.vbig:hover { color: #fff; background: var(--accent); border-color: var(--accent); }
+.vbig svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 1.5; }
+.vbig .i-shrink, body.theater .vbig .i-grow { display: none; }
+body.theater .vbig .i-shrink { display: block; }
+.video + .credit { padding-right: 110px; min-height: 28px; }
+/* enlarged: the same element becomes a centred cinema frame. The drawer drops its backdrop-filter so that
+   position: fixed resolves against the viewport instead of the drawer. */
+body.theater .drawer { z-index: 90; -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(12, 10, 12, .97); }
+body.theater .video {
+  position: fixed; z-index: 95; left: 50%; top: 50%; margin: 0; transform: translate(-50%, -50%);
+  width: min(92vw, calc((100vh - 120px) * 16 / 9)); height: auto; border-color: rgba(255, 255, 255, .14);
+  box-shadow: 0 0 0 100vmax rgba(3, 2, 4, .9), 0 40px 120px -20px rgba(232, 53, 43, .35);
+  animation: theater-in .45s cubic-bezier(.2, .7, .2, 1);
+}
+body.theater .vbig { top: auto; bottom: calc(100% + 12px); height: 32px; background: rgba(0, 0, 0, .4); }
+@keyframes theater-in { from { opacity: 0; transform: translate(-50%, -48%) scale(.96); } }
 .poster { position: absolute; inset: 0; border: 0; cursor: pointer; padding: 0; background: #000; display: grid; place-items: center; }
 .poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(.2, .7, .2, 1), filter .5s; filter: saturate(.9) brightness(.82); }
 .poster:hover img { transform: scale(1.045); filter: none; }
