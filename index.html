@@ -4,77 +4,80 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lean Atlas 薄肌图谱</title>
-<meta name="description" content="Interactive gym muscle atlas: tap any muscle on the male or female model to watch exercise tutorials. 交互式薄肌训练图谱。">
+<meta name="description" content="A real-anatomy 3D muscle atlas: turn the body, tap any muscle, watch the lesson. 真实解剖 3D 薄肌训练图谱。">
+<meta name="theme-color" content="#050406">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;900&display=swap">
+<link rel="stylesheet" href="styles.css?v=4">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.3/build/index.module.js"
+} }
+</script>
 </head>
 <body>
-<div class="sky" aria-hidden="true"></div>
 
 <header class="top">
-  <div class="wrap top-in">
-    <a class="brand" href="#top" aria-label="Lean Atlas">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3c4 0 6 3 6 6s-2 5-2 5l5 3-3 12h-4l-2-8-2 8h-4L7 17l5-3s-2-2-2-5 2-6 6-6Z"/></svg>
-      <span><b>LEAN ATLAS</b><i>薄肌图谱</i></span>
-    </a>
-    <nav class="nav">
-      <a href="#atlas" data-t="navAtlas"></a>
-      <a href="#rules" data-t="navRules"></a>
-      <a href="#plan" data-t="navPlan"></a>
-    </nav>
-    <div class="lang" role="group" aria-label="Language">
-      <button type="button" id="lang-zh" data-lang="zh">中</button>
-      <button type="button" id="lang-en" data-lang="en">EN</button>
-    </div>
+  <a class="brand" href="#top" aria-label="Lean Atlas">
+    <span class="mark" aria-hidden="true"></span>
+    <b>LEAN ATLAS</b><i>薄肌图谱</i>
+  </a>
+  <nav class="nav">
+    <a href="#atlas" data-t="navAtlas"></a>
+    <a href="#rules" data-t="navRules"></a>
+    <a href="#plan" data-t="navPlan"></a>
+  </nav>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" id="lang-zh" data-lang="zh">中文</button>
+    <button type="button" id="lang-en" data-lang="en">EN</button>
   </div>
 </header>
 
 <main id="top">
-  <section class="hero wrap">
-    <p class="eyebrow" data-t="eyebrow"></p>
-    <h1><span data-t="h1a"></span><em data-t="h1b"></em></h1>
-    <p class="lede" data-t="lede"></p>
-    <ul class="stats">
-      <li><b>23</b><span data-t="stat1"></span></li>
-      <li><b id="stat-videos">51</b><span data-t="stat2"></span></li>
-      <li><b>2 × 2</b><span data-t="stat3"></span></li>
-    </ul>
-  </section>
+  <section class="stage" id="atlas">
+    <div class="gl-wrap" id="stage"><canvas id="gl" aria-label="3D anatomy model"></canvas></div>
+    <div class="bars" aria-hidden="true"></div>
 
-  <section id="atlas" class="atlas">
-    <div class="wrap atlas-grid">
-      <aside class="index" aria-labelledby="index-h">
-        <h2 id="index-h" class="label" data-t="index"></h2>
-        <div id="index"></div>
-      </aside>
+    <div class="titles" id="titles">
+      <p class="eyebrow" data-t="eyebrow"></p>
+      <h1><span data-t="h1a"></span><em data-t="h1b"></em></h1>
+      <p class="lede" data-t="lede"></p>
+      <ul class="stats">
+        <li><b>23</b><span data-t="stat1"></span></li>
+        <li><b id="stat-videos">102</b><span data-t="stat2"></span></li>
+        <li><b>360°</b><span data-t="stat3"></span></li>
+      </ul>
+    </div>
 
-      <div class="stage">
-        <div class="controls">
-          <div class="seg" role="group" aria-label="View">
-            <button type="button" id="view-front" data-view="front" data-t="front" aria-pressed="true"></button>
-            <button type="button" id="view-back" data-view="back" data-t="back" aria-pressed="false"></button>
-          </div>
-          <p class="hint" data-t="hint"></p>
-        </div>
-        <div class="figures" id="figures">
-          <figure class="body" data-sex="m">
-            <div class="flip">
-              <svg class="face front" role="img" aria-label="Male front"></svg>
-              <svg class="face back" role="img" aria-label="Male back"></svg>
-            </div>
-            <figcaption><span data-t="male"></span><small>♂ 180 cm</small></figcaption>
-          </figure>
-          <figure class="body" data-sex="f">
-            <div class="flip">
-              <svg class="face front" role="img" aria-label="Female front"></svg>
-              <svg class="face back" role="img" aria-label="Female back"></svg>
-            </div>
-            <figcaption><span data-t="female"></span><small>♀ 168 cm</small></figcaption>
-          </figure>
-        </div>
+    <aside class="index" aria-labelledby="index-h">
+      <h2 id="index-h" class="label" data-t="index"></h2>
+      <div id="index"></div>
+    </aside>
+
+    <div class="hud" id="hud">
+      <div class="hud-group" role="group" aria-label="View">
+        <button type="button" data-face="front" data-t="front"></button>
+        <button type="button" data-face="right" data-t="sideR"></button>
+        <button type="button" data-face="back" data-t="back"></button>
+        <button type="button" data-face="left" data-t="sideL"></button>
       </div>
+      <div class="hud-group">
+        <button type="button" id="btn-auto" aria-pressed="true" data-t="auto"></button>
+        <button type="button" id="btn-out" aria-label="Zoom out">−</button>
+        <button type="button" id="btn-in" aria-label="Zoom in">+</button>
+      </div>
+    </div>
+    <p class="hint" data-t="hint"></p>
+    <a class="scroll" href="#rules"><span data-t="scroll"></span><i aria-hidden="true"></i></a>
+
+    <div class="loader" id="loader">
+      <p data-t="loading"></p>
+      <div class="bar"><i id="loader-bar"></i></div>
+      <span id="loader-pct">0%</span>
     </div>
   </section>
 
@@ -95,20 +98,21 @@
 
 <footer class="foot wrap">
   <p data-t="foot1"></p>
+  <p data-t="foot3"></p>
   <p data-t="foot2"></p>
   <p class="mono">LEAN ATLAS · 2026</p>
 </footer>
 
 <div class="tip" id="tip" hidden></div>
-
 <div class="scrim" id="scrim" hidden></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="false" aria-labelledby="d-title" hidden>
   <div class="d-in" id="d-in"></div>
 </aside>
 
-<script src="js/data.js"></script>
-<script src="js/videos-zh.js"></script>
-<script src="js/anatomy.js"></script>
-<script src="js/app.js"></script>
+<script src="js/data.js?v=4"></script>
+<script src="js/videos-zh.js?v=4"></script>
+<script src="js/names.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
+<script type="module" src="js/viewer.js?v=4"></script>
 </body>
 </html>

@@ -1,14 +1,21 @@
 # Lean Atlas · 薄肌图谱
 
-Interactive gym muscle atlas. Tap any of 23 muscle groups on the male or female model (front and back) to open exercise lessons: embedded YouTube tutorial, sets × reps, rest, form cues. Chinese / English toggle.
+A real-anatomy 3D muscle atlas. The body turns on its own (or drag it); hover names each muscle, a click opens the lesson for that muscle group: embedded tutorial video, sets × reps, rest and form cues. 中文 mode plays Chinese lessons from Bilibili, EN mode plays English lessons from YouTube.
 
-Plain HTML/CSS/JS, no build step. Serve the folder over http (YouTube embeds need a real origin):
+Live: https://pasbean61.github.io/lean-atlas/
+
+Plain HTML/CSS/JS, no build step. Serve the folder over http (the model and the video embeds need a real origin):
 
     python3 -m http.server 8810
 
-- `js/anatomy.js` – figure renderer (point data → smoothed SVG; female form via proportional warp)
-- `js/data.js` – muscles, 51 exercises with English (YouTube) video ids, rules, weekly plan, UI strings
-- `js/videos-zh.js` – Chinese lesson per exercise (Bilibili), shown in 中文 mode
-- `js/app.js` – interaction, drawer, language, deep links (`#biceps`)
+- `assets/body.glb` – the 3D model (muscles grouped into 23 trainable groups, tendons, skeleton), Draco-compressed
+- `js/viewer.js` – three.js stage: turntable, lighting, procedural muscle-fibre shader, picking, x-ray selection, post-processing
+- `js/app.js` – page logic: drawer, language, index, deep links (`#biceps`)
+- `js/data.js` – muscle groups, 51 exercises (English video ids), rules, weekly plan, UI strings
+- `js/videos-zh.js` – Chinese lesson per exercise (Bilibili)
+- `js/names.js` – Chinese names of the individual muscles in the model
 
-English lessons are embedded from YouTube, Chinese lessons from Bilibili; rights belong to their creators.
+## Credits
+
+The 3D model is derived from **Z-Anatomy** (CC BY-SA 4.0) and **BodyParts3D**, © The Database Center for Life Science (CC BY-SA 2.1 Japan); see `assets/ATTRIBUTION.md`. `assets/body.glb` is shared under CC BY-SA 4.0.
+Lesson videos are embedded from YouTube and Bilibili; rights belong to their creators.

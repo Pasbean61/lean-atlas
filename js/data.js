@@ -3,10 +3,10 @@
 window.LA = window.LA || {};
 
 LA.regions = [
-  { id: "upper", zh: "上肢 · 胸肩臂", en: "Chest, shoulders & arms" },
-  { id: "back",  zh: "背部",          en: "Back" },
-  { id: "core",  zh: "核心",          en: "Core" },
-  { id: "lower", zh: "下肢 · 臀腿",    en: "Glutes & legs" }
+  { id: "upper", zh: "上肢 · 胸肩臂", en: "Chest, shoulders & arms", s: { zh: "上肢", en: "Upper" } },
+  { id: "back",  zh: "背部",          en: "Back", s: { zh: "背部", en: "Back" } },
+  { id: "core",  zh: "核心",          en: "Core", s: { zh: "核心", en: "Core" } },
+  { id: "lower", zh: "下肢 · 臀腿",    en: "Glutes & legs", s: { zh: "下肢", en: "Lower" } }
 ];
 
 /* Exercise library. v = YouTube id, ch = channel, d = length */
@@ -353,12 +353,12 @@ LA.plan = [
 LA.t = {
   zh: {
     navAtlas: "肌肉图谱", navRules: "薄肌法则", navPlan: "一周计划",
-    eyebrow: "交互式健身房肌肉图谱",
+    eyebrow: "真实解剖 · 3D 肌肉图谱",
     h1a: "点哪里，", h1b: "就练哪里。",
-    lede: "两具精细分区的人体模型，覆盖健身房里能练到的 23 个肌群。点击任意肌肉，查看对应动作的教学视频、组数次数和发力要点。",
-    stat1: "个肌群", stat2: "个教学视频", stat3: "具人体 · 正反两面",
+    lede: "一具按真实人体解剖数据建模的 3D 肌肉模型。拖动旋转，点击任意一块肌肉，直接看这块肌肉怎么练。",
+    stat1: "个肌群", stat2: "个教学视频", stat3: "自由旋转",
     front: "正面", back: "背面", male: "男性", female: "女性",
-    hint: "悬停查看名称 · 点击打开教学", index: "肌群索引",
+    hint: "拖动旋转 · 悬停看名称 · 点击看教学", index: "肌群索引",
     exercises: "推荐动作", sets: "组 × 次", rest: "组间休息", equip: "器械", level: "难度",
     lv: ["", "入门", "进阶", "挑战"], cues: "动作要点", alsoWorks: "同时练到",
     play: "播放教学视频", openYt: "在 YouTube 打开", openBili: "在 B 站打开", altEn: "英文原版教学",
@@ -369,16 +369,25 @@ LA.t = {
     planLede: "每个肌群每周被练到两次。点击任意动作直接看教学视频。",
     foot1: "中文教学视频来自哔哩哔哩，英文教学视频来自 YouTube，版权归原作者所有。",
     foot2: "本网站仅供健身学习参考，有伤病请先咨询医生或康复师。",
-    viewOnFront: "正面可见", viewOnBack: "背面可见"
+    viewOnFront: "正面可见", viewOnBack: "背面可见",
+    sideL: "左侧",
+    sideR: "右侧",
+    auto: "自动旋转",
+    scroll: "薄肌法则",
+    loading: "正在载入人体模型",
+    noGl: "这台设备无法显示 3D 模型，请用肌群索引选择部位。",
+    foot3: "3D 模型基于 Z-Anatomy（CC BY-SA 4.0）与 BodyParts3D（© 日本生命科学数据库中心，CC BY-SA 2.1 JP）制作。",
+    partOf: "属于",
+    muscles: "包含的肌肉"
   },
   en: {
     navAtlas: "Atlas", navRules: "Principles", navPlan: "Weekly plan",
-    eyebrow: "Interactive gym muscle atlas",
+    eyebrow: "Real anatomy · 3D muscle atlas",
     h1a: "Tap a muscle.", h1b: "Learn the lift.",
-    lede: "Two finely mapped bodies covering the 23 muscle groups you can train in a gym. Tap any muscle for video lessons, sets and reps, and form cues.",
-    stat1: "muscle groups", stat2: "video lessons", stat3: "bodies · front & back",
+    lede: "A 3D muscle model built from real human anatomy data. Drag to turn it, tap any muscle, and see exactly how to train it.",
+    stat1: "muscle groups", stat2: "video lessons", stat3: "free rotation",
     front: "Front", back: "Back", male: "Male", female: "Female",
-    hint: "Hover to name · tap to open the lesson", index: "Muscle index",
+    hint: "Drag to turn · hover to name · tap for the lesson", index: "Muscle index",
     exercises: "Exercises", sets: "Sets × reps", rest: "Rest", equip: "Equipment", level: "Level",
     lv: ["", "Beginner", "Intermediate", "Advanced"], cues: "Form cues", alsoWorks: "Also works",
     play: "Play lesson", openYt: "Open on YouTube", openBili: "Open on Bilibili", altEn: "English lesson",
@@ -389,7 +398,16 @@ LA.t = {
     planLede: "Every muscle group gets trained twice a week. Tap any exercise to watch the lesson.",
     foot1: "English lessons are embedded from YouTube and Chinese lessons from Bilibili; rights belong to their creators.",
     foot2: "For general education only. If you have an injury, check with a doctor or physio first.",
-    viewOnFront: "Front view", viewOnBack: "Back view"
+    viewOnFront: "Front view", viewOnBack: "Back view",
+    sideL: "Left",
+    sideR: "Right",
+    auto: "Auto-rotate",
+    scroll: "The rules",
+    loading: "Loading the anatomy model",
+    noGl: "This device cannot show the 3D model. Use the muscle index instead.",
+    foot3: "3D model derived from Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (© The Database Center for Life Science, CC BY-SA 2.1 Japan).",
+    partOf: "Part of",
+    muscles: "Muscles in this group"
   }
 };
 
