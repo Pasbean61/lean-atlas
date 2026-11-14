@@ -34,7 +34,7 @@
   addEventListener("resize", frameStage);
 
   /* left column: titles and index share one flex column (they cannot overlap). If the titles need more
-     height than the column leaves them, step them down: stats → smaller title → lede → eyebrow.
+     height than the column leaves them, step them down: stats → smaller title → lede.
      Re-runs whenever the column, the index or the fonts change size, not just once. */
   const stageBox = $("#atlas"), titlesEl = $("#titles"), indexBox = $(".index"), leftCol = $("#leftcol");
   const titlesNeed = () => {

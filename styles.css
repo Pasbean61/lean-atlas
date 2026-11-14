@@ -63,10 +63,7 @@ a { color: inherit; }
 .brand .mark { align-self: center; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px 2px rgba(232, 53, 43, .8); }
 .brand b { font: 600 13px/1 var(--f-body); letter-spacing: .34em; }
 .brand i { font: 500 12px/1 var(--f-zh); font-style: normal; color: var(--mute); letter-spacing: .3em; }
-.nav { display: flex; gap: 30px; margin-left: auto; }
-.nav a { text-decoration: none; color: var(--mute); font-size: 13px; letter-spacing: .08em; transition: color .25s; }
-.nav a:hover { color: var(--ink); }
-.lang { display: flex; border: 1px solid var(--line); }
+.lang { display: flex; margin-left: auto; border: 1px solid var(--line); }
 .lang button {
   border: 0; background: none; cursor: pointer; padding: 7px 13px;
   font: 500 11px/1 var(--f-mono); letter-spacing: .12em; color: var(--mute); transition: all .25s;
@@ -306,12 +303,9 @@ button.chip:hover { border-color: var(--gold); color: #fff; }
 html[lang="zh-CN"] .stage.fit-2 .titles h1 { font-size: clamp(32px, 3.6vw, 50px); }
 .stage.fit-2 .lede { margin-top: 16px; }
 .stage.fit-3 .lede { display: none; }
-.stage.fit-4 .titles .eyebrow { display: none; }
 .stage.fit-4 .titles h1 { font-size: clamp(30px, 3.4vw, 44px); }
-@media (max-width: 1180px) { :root { --drawer-w: 420px; } .nav { gap: 20px; } }
+@media (max-width: 1180px) { :root { --drawer-w: 420px; } }
 @media (max-width: 860px) {
-  .nav { display: none; }
-  .lang { margin-left: auto; }
   .stage { height: auto; min-height: 0; overflow: visible; }
   .gl-wrap { position: relative; inset: auto; height: 76vh; height: 76svh; min-height: 480px; }
   .bars { inset: 0 0 auto; height: 76vh; height: 76svh; min-height: 480px; }
@@ -326,7 +320,12 @@ html[lang="zh-CN"] .stage.fit-2 .titles h1 { font-size: clamp(32px, 3.6vw, 50px)
   .mbtn { padding: 7px 9px; font-size: 14px; }
   .hud { top: calc(max(76svh, 480px) - 58px); bottom: auto; right: var(--gut); left: var(--gut); justify-content: space-between; }
   body.drawer-open .hud { right: var(--gut); opacity: 0; pointer-events: none; }
-  .hud button { padding: 0 10px; min-width: 36px; }
+  .hud { gap: 8px; }
+  .hud-group { min-width: 0; }
+  .hud-group:first-child { flex: 1; }
+  .hud-group:first-child button { flex: 1; }
+  .hud button { padding: 0 7px; min-width: 30px; white-space: nowrap; font-size: 10px; letter-spacing: .04em; }
+  html[lang="zh-CN"] .hud button { padding: 0 8px; font-size: 12px; letter-spacing: 0; }
   .drawer {
     top: auto; left: 0; width: 100%; height: 62vh; height: 62svh; border-left: 0; border-top: 1px solid var(--line);
     transform: translateY(104%); padding-bottom: env(safe-area-inset-bottom, 0px);

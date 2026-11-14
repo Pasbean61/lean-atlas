@@ -344,8 +344,6 @@ LA.muscles = {
 /* UI strings */
 LA.t = {
   zh: {
-    navAtlas: "肌肉图谱",
-    eyebrow: "真实解剖 · 3D 肌肉图谱",
     h1a: "点哪里，", h1b: "就练哪里。",
     lede: "一具按真实人体解剖数据建模的 3D 肌肉模型。拖动旋转，点击任意一块肌肉，直接看这块肌肉怎么练。",
     stat1: "个肌群", stat2: "个教学视频", stat3: "自由旋转",
@@ -368,8 +366,6 @@ LA.t = {
     muscles: "包含的肌肉"
   },
   en: {
-    navAtlas: "Atlas",
-    eyebrow: "Real anatomy · 3D muscle atlas",
     h1a: "Tap a muscle.", h1b: "Learn the lift.",
     lede: "A 3D muscle model built from real human anatomy data. Drag to turn it, tap any muscle, and see exactly how to train it.",
     stat1: "muscle groups", stat2: "video lessons", stat3: "free rotation",
