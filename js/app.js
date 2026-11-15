@@ -77,69 +77,31 @@
       burst(t, { freq: 2300 * jit, q: 3, gain: 0.16 * gain, dur: 0.014, atk: 0.0004 });
       PARTIALS[set].forEach((f, i) => tone(t, { freq: f * jit, gain: (0.07 - i * 0.017) * gain * ring, dur: (0.05 - i * 0.012) * ring + 0.01, atk: 0.0005 }));
     }
-    // bearing whir: a looped band of noise whose level follows how fast the bezel is turning
-    let whir = null;
-    function whirNode() {
-      if (whir) return whir;
-      const src = ctx.createBufferSource(); src.buffer = noise; src.loop = true;
-      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2400; bp.Q.value = 0.9;
-      const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 900;
-      const g = ctx.createGain(); g.gain.value = 0;
-      src.connect(bp).connect(hp).connect(g).connect(out); src.start();
-      return (whir = { g, bp });
-    }
+    // One sound everywhere: the same crisp steel click. Only its loudness changes with the job.
+    const snap = (gain, ring = 1) => click(ctx.currentTime, { set: "inner", gain, ring });
     return {
       get on() { return on; },
       unlock() { init(); if (ctx && ctx.state === "suspended") ctx.resume(); },
       set(v) { on = v; store.set("la-sound", v ? "on" : "off"); if (v) this.unlock(); else if (ctx) ctx.suspend(); },
-      // one notch passing the index: the pawl lifts (faint) then snaps down; fast spins become a lighter ratchet
+      // a labelled detent passing the index
       tick(ring, speed = 0) {
         if (!live()) return;
         const now = performance.now();
         if (now - lastTick < 22) return;
         lastTick = now;
-        const t = ctx.currentTime, outer = ring === "outer";
-        const fast = Math.min(1, Math.abs(speed) / 900), soft = 1 - fast * 0.45;
-        click(t, { set: outer ? "outer" : "inner", gain: 0.28 * soft, ring: 0.5 });
-        click(t + 0.007, { set: outer ? "outer" : "inner", gain: (outer ? 0.95 : 0.8) * soft, ring: 1 - fast * 0.5 });
+        snap(0.85 - Math.min(1, Math.abs(speed) / 900) * 0.35);
       },
-      // the fine knurl between detents: tiny dry ticks that make it sound like a toothed wheel
+      // the fine knurl between detents: the same click, much quieter, so turning sounds like a toothed wheel
       tooth(ring, speed = 0) {
         if (!live()) return;
         const now = performance.now();
         if (now - lastTick < 12 || now - lastTooth < 16) return;
         lastTooth = now;
-        const fast = Math.min(1, Math.abs(speed) / 900);
-        click(ctx.currentTime, { set: ring === "outer" ? "outer" : "inner", gain: 0.2 - fast * 0.06, ring: 0.35, pitch: 1.12 });
+        snap(0.22, 0.4);
       },
-      spin(level) {
-        if (!live()) return;
-        const w = whirNode(), t = ctx.currentTime, l = Math.min(1, level);
-        w.g.gain.setTargetAtTime(l * l * 0.05, t, 0.04);
-        w.bp.frequency.setTargetAtTime(1800 + l * 2600, t, 0.06);
-      },
-      // the bezel seats in its detent: a brighter, ringing snap
-      settle(ring) {
-        if (!live()) return;
-        const t = ctx.currentTime, outer = ring === "outer";
-        click(t, { set: outer ? "outer" : "inner", gain: 1.15, ring: 1.6, pitch: 1.04 });
-        tone(t, { freq: outer ? 1250 : 1600, gain: 0.05, dur: 0.03, atk: 0.0005 });
-      },
-      // two-position slide switch: a short dry scrape, then a clean click-clack
-      slide() {
-        if (!live()) return;
-        const t = ctx.currentTime;
-        burst(t, { freq: 3000, q: 2, gain: 0.06, dur: 0.09, sweep: 6500 });
-        click(t + 0.085, { set: "latch", gain: 0.9, ring: 1.1 });
-        click(t + 0.105, { set: "inner", gain: 0.5, ring: 0.6, pitch: 1.1 });
-      },
-      // push button in the hub: click down, lighter click up
-      press() {
-        if (!live()) return;
-        const t = ctx.currentTime;
-        click(t, { set: "latch", gain: 0.85, ring: 0.8 });
-        click(t + 0.075, { set: "inner", gain: 0.45, ring: 0.6, pitch: 1.15 });
-      }
+      settle() { if (live()) snap(1); },
+      slide() { if (live()) snap(1); },
+      press() { if (live()) snap(1); }
     };
   })();
   ["pointerdown", "keydown", "touchend"].forEach((type) => addEventListener(type, () => sound.unlock(), { passive: true }));
@@ -170,12 +132,12 @@
     kick();
   }
 
-  let raf = 0, lastT = 0, whirLevel = 0;
+  let raf = 0, lastT = 0;
   const TOOTH = 7.5;   // knurl pitch in degrees: fine ticks between the labelled detents
   function kick() { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(tick); } }
   function tick(now) {
     const dt = Math.min(0.032, (now - lastT) / 1000); lastT = now;
-    let moving = false, spin = 0;
+    let moving = false;
     for (const [name, r] of Object.entries(rings)) {
       if (!r.drag) {
         // heavy bezel: low stiffness, just under-damped, so it lands with a small settle
@@ -187,17 +149,13 @@
         } else { moving = true; r.travel = (r.travel || 0) + Math.abs(r.vel * dt); }
       } else moving = true;
       r.el.style.setProperty("--rot", r.rot.toFixed(3) + "deg");
-      // real angular speed this frame (works for drag and spring alike) drives the knurl ticks and the whir
+      // real angular speed this frame (works for drag and spring alike)
       const rate = dt > 0 ? Math.abs(r.rot - (r.prev ?? r.rot)) / dt : 0; r.prev = r.rot;
-      spin = Math.max(spin, rate / 650);
       detent(name, r);
       const tooth = Math.floor(r.rot / TOOTH);
       if (r.tooth !== undefined && tooth !== r.tooth && !reducedMotion) sound.tooth(name, rate);
       r.tooth = tooth;
     }
-    whirLevel += (spin - whirLevel) * 0.35;
-    sound.spin(moving ? whirLevel : 0);
-    if (!moving) whirLevel = 0;
     raf = moving ? requestAnimationFrame(tick) : 0;
   }
   // which detent is under the index right now; pulse the lamp each time one clicks past
@@ -450,7 +408,7 @@
     tip.innerHTML = `<b>${esc(part)}</b><small>${esc(sub)}</small><em>${esc(L(m))}</em>`;
     tip.style.left = d.x + "px"; tip.style.top = d.y + "px"; tip.hidden = false;
   });
-  addEventListener("la:pick", (e) => { tip.hidden = true; if (e.detail) open(e.detail.group); });
+  addEventListener("la:pick", (e) => { tip.hidden = true; if (e.detail) { sound.press(); open(e.detail.group); } });
   // the tooltip follows the 3D hover; drop it as soon as the pointer leaves the canvas or the page scrolls
   const hideTip = () => { tip.hidden = true; if (view()) view().hover(null); };
   $("#gl").addEventListener("pointerleave", hideTip);
