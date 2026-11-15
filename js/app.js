@@ -10,7 +10,7 @@
 
   const state = {
     lang: store.get("la-lang") || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"),
-    sel: null, ex: null, combo: "chest", parts: {}
+    sel: null, ex: null, mode: "muscles", region: "chest", muscle: null, combo: "chest", highlightRegion: true, parts: {}
   };
   const T = () => LA.t[state.lang];
   const L = (o) => (o ? o[state.lang] : "");
@@ -19,54 +19,108 @@
   const narrow = () => matchMedia("(max-width: 860px)").matches;
 
   const combos = $(".combos"), dial = $("#combo-dial"), exerciseList = $("#combo-exercises");
-  const comboKeys = Object.keys(LA.combos);
+  const outerRing = $(".dial-outer", dial), innerRing = $(".dial-inner", dial);
+  const reset = $(".combo-reset", dial);
   const exerciseGroups = Object.fromEntries(Object.entries(LA.muscles).flatMap(([group, muscle]) =>
     muscle.ex.map((exercise) => [exercise, group])));
-  const angleStep = 360 / comboKeys.length;
-  dial.insertAdjacentHTML("beforeend", comboKeys.map((key, i) =>
-    `<button type="button" class="combo-option" data-combo="${key}" style="--angle:${i * angleStep}deg"></button>`).join(""));
-  const comboButtons = $$("[data-combo]", dial);
-  let dialAngle = 0;
-  function renderCombo() {
-    const combo = LA.combos[state.combo];
-    for (const button of comboButtons) {
-      const key = button.dataset.combo;
-      button.setAttribute("aria-pressed", String(state.combo === key));
-      if (key) button.textContent = L(LA.combos[key]);
-    }
-    if (combo) {
-      const target = comboKeys.indexOf(state.combo) * angleStep;
-      dialAngle = target - 360 * Math.round((target - dialAngle) / 360);
-      dial.style.setProperty("--selected-angle", dialAngle + "deg");
-    }
-    dial.classList.toggle("has-selection", Boolean(combo));
-    exerciseList.hidden = !combo;
-    exerciseList.innerHTML = combo ? combo.exercises.map((key) =>
-      `<li><button type="button" data-exercise="${key}">${esc(L(LA.ex[key].n))}</button></li>`).join("") : "";
+  function renderRing(ring, entries, active) {
+    const index = entries.findIndex(([key]) => key === active);
+    ring.innerHTML = entries.map(([key, item], i) => {
+      const name = L(item), label = L(LA.dialLabels[key] || item);
+      return `<button type="button" data-dial-key="${key}" aria-label="${esc(name)}" title="${esc(name)}" aria-pressed="${i === index}" style="--angle:${i * 360 / entries.length}deg">${esc(label)}</button>`;
+    }).join("");
+    const marker = ring === outerRing ? $(".dial-marker-outer", dial) : $(".dial-marker-inner", dial);
+    marker.hidden = index < 0;
+    if (index < 0) return;
+    const from = Number(marker.dataset.angle || 0), target = index * 360 / entries.length;
+    const angle = target - 360 * Math.round((target - from) / 360);
+    marker.dataset.angle = angle;
+    marker.style.setProperty("--marker-angle", angle + "deg");
   }
-  function highlightCombo() {
-    const viewer = view(), combo = LA.combos[state.combo];
+  function renderDial() {
+    const browse = state.mode === "muscles";
+    const region = LA.dialRegions[state.region];
+    const muscle = LA.muscles[state.muscle], combo = LA.combos[state.combo];
+    const current = browse ? muscle || (state.highlightRegion ? region : null) : combo;
+    const options = browse ? Object.entries(LA.dialRegions) : Object.entries(LA.combos);
+    const exercises = browse ? muscle?.ex || (state.highlightRegion ? region.exercises : []) : combo?.exercises;
+
+    $$("[data-mode]", combos).forEach((button) =>
+      button.setAttribute("aria-pressed", String(button.dataset.mode === state.mode)));
+    outerRing.setAttribute("aria-labelledby", browse ? "dial-muscles" : "dial-combos");
+    renderRing(outerRing, options, browse ? state.region : state.combo);
+    renderRing(innerRing, browse ? region.groups.map((key) => [key, LA.muscles[key]]) : [], state.muscle);
+    innerRing.hidden = !browse;
+    $("#dial-selection").textContent = current ? L(current) : T().wholeBody;
+    reset.hidden = !current;
+    exerciseList.hidden = !exercises?.length;
+    exerciseList.innerHTML = (exercises || []).map((key) => {
+      const target = !muscle || !browse ? `<small>${esc(L(LA.muscles[exerciseGroups[key]]))}</small>` : "";
+      return `<li><button type="button" data-exercise="${key}"><span>${esc(L(LA.ex[key].n))}</span>${target}</button></li>`;
+    }).join("");
+  }
+  function highlightDial() {
+    const viewer = view();
     if (!viewer) return;
-    viewer.setCombo(combo ? combo.groups : []);
-    if (!state.sel && combo) viewer.face(combo.face);
+    if (state.mode === "combos") {
+      const combo = LA.combos[state.combo];
+      viewer.setCombo(combo?.groups || []);
+      if (!state.sel && combo) viewer.face(combo.face);
+      return;
+    }
+    if (state.muscle) {
+      viewer.setCombo([state.muscle], state.sel ? null : state.muscle);
+    } else {
+      const region = state.highlightRegion ? LA.dialRegions[state.region] : null;
+      viewer.setCombo(region?.groups || []);
+      if (!state.sel && region) viewer.face(region.face);
+    }
   }
+  function selectDial() {
+    renderDial();
+    highlightDial();
+  }
+  $(".dial-modes", combos).addEventListener("click", (event) => {
+    const mode = event.target.dataset.mode;
+    if (!mode || mode === state.mode) return;
+    state.mode = mode;
+    selectDial();
+  });
+  reset.addEventListener("click", () => {
+    if (state.mode === "muscles") {
+      state.muscle = null;
+      state.highlightRegion = false;
+    } else {
+      state.combo = null;
+    }
+    selectDial();
+    ($('[aria-pressed="true"]', outerRing) || $("button", outerRing)).focus({ preventScroll: true });
+  });
   dial.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-combo]");
-    if (!button || button.dataset.combo === state.combo) return;
-    state.combo = button.dataset.combo;
-    renderCombo();
-    highlightCombo();
+    const button = event.target.closest("[data-dial-key]");
+    if (!button) return;
+    const key = button.dataset.dialKey, ring = button.parentElement;
+    const focused = document.activeElement === button;
+    if (state.mode === "combos") {
+      state.combo = key;
+    } else if (ring === innerRing) {
+      state.muscle = key;
+    } else {
+      state.region = key;
+      state.muscle = null;
+      state.highlightRegion = true;
+    }
+    selectDial();
+    if (focused) $(`[data-dial-key="${key}"]`, ring).focus({ preventScroll: true });
   });
   dial.addEventListener("keydown", (event) => {
-    const directions = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 };
-    const direction = directions[event.key];
-    if (!direction) return;
+    const direction = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[event.key];
+    if (!direction || !event.target.matches("[data-dial-key]")) return;
     event.preventDefault();
-    const current = comboKeys.indexOf(event.target.dataset.combo);
-    const next = current < 0 ? (direction > 0 ? 0 : comboKeys.length - 1)
-      : (current + direction + comboKeys.length) % comboKeys.length;
-    comboButtons[next + 1].focus();
-    comboButtons[next + 1].click();
+    const buttons = $$("button", event.target.parentElement);
+    const next = buttons[(buttons.indexOf(event.target) + direction + buttons.length) % buttons.length];
+    next.focus();
+    next.click();
   });
 
   /* ---------- stage framing: keep the body clear of the lesson drawer ---------- */
@@ -89,7 +143,7 @@
     loader.classList.add("done");
     document.body.classList.add("model-ready");
     frameStage();
-    highlightCombo();
+    highlightDial();
     if (state.sel) { view().select(state.sel, LA.ex[state.ex].also); renderDrawer(); }
   });
   addEventListener("la:viewer", frameStage);
@@ -165,6 +219,7 @@
       if (trigger) $(`[data-exercise="${trigger}"]`, exerciseList)?.focus({ preventScroll: true });
     }, 520);
     if (view()) view().select(null);
+    highlightDial();
     frameStage();
     history.replaceState(null, "", location.pathname + location.search);
   }
@@ -274,7 +329,7 @@
     document.documentElement.lang = state.lang === "zh" ? "zh-CN" : "en";
     $$("[data-t]").forEach((n) => { const v = t[n.dataset.t]; if (v != null) n.textContent = v; });
     $$(".lang button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === state.lang)));
-    renderCombo();
+    renderDial();
     if (loader.classList.contains("failed")) $("p", loader).textContent = t.noGl;
     if (state.sel) renderDrawer();
   }

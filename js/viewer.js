@@ -478,6 +478,10 @@ frame();
 
 /* ---------- API for app.js ---------- */
 function nearestAngle(target, from) { const two = Math.PI * 2; return from + ((((target - from) % two) + two + Math.PI) % two - Math.PI); }
+function aimAtGroup(g) {
+  const yaw = YAW[g.id] ?? THREE.MathUtils.radToDeg(Math.atan2(g.centroid.x * 0.6, g.centroid.z));
+  view.rotTarget = nearestAngle(-THREE.MathUtils.degToRad(yaw), view.rot);
+}
 window.LAView = {
   get ready() { return ready; },
   select(id, secondary = []) {
@@ -485,15 +489,18 @@ window.LAView = {
     applyStates();
     if (view.sel) {
       const g = groups[view.sel];
-      const yaw = YAW[view.sel] != null ? YAW[view.sel] : THREE.MathUtils.radToDeg(Math.atan2(g.centroid.x * 0.6, g.centroid.z));
-      view.rotTarget = nearestAngle(-THREE.MathUtils.degToRad(yaw), view.rot);
+      aimAtGroup(g);
       view.tyTarget = THREE.MathUtils.clamp(g.centroid.y, 0.45, 1.42);
       view.distTarget = THREE.MathUtils.clamp(2.2 + g.size * 1.9, 2.5, 3.9);
     } else { view.tyTarget = 0.93; view.distTarget = BASE_DIST; view.autoHold = performance.now() + 900; }
   },
-  setCombo(ids) {
+  setCombo(ids, focus) {
     view.combo = new Set(ids.filter((id) => groups[id]));
     applyStates();
+    if (focus && groups[focus]) {
+      aimAtGroup(groups[focus]);
+      view.autoHold = performance.now() + 6000;
+    }
   },
   setSecondary(secondary = []) { view.sec = secondary.filter((s) => groups[s] && s !== view.sel); applyStates(); },
   hover(id) { view.hot = groups[id] ? id : null; applyStates(); },

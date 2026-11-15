@@ -59,6 +59,22 @@ a { color: inherit; }
 .top.solid, body.drawer-open .top {
   background: rgba(0, 0, 0, .72); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-color: var(--line);
 }
+.site-title {
+  position: relative; margin: 0; padding-inline-start: 21px; white-space: nowrap;
+  font: 600 clamp(36px, 4vw, 59px)/.9 var(--f-display); letter-spacing: -.035em;
+  text-shadow: 0 2px 20px #000;
+}
+.site-title::before {
+  content: ""; position: absolute; inset: 13% auto 13% 0; width: 3px;
+  background: linear-gradient(transparent, var(--accent-hi), transparent); transform: skew(-14deg);
+}
+.site-title em {
+  font-weight: inherit; color: var(--accent-hi); text-shadow: 0 0 30px rgba(232, 53, 43, .28);
+}
+html[lang="zh-CN"] .site-title {
+  font: 900 clamp(25px, 3vw, 43px)/1.15 var(--f-display-zh); letter-spacing: .075em;
+}
+html[lang="zh-CN"] .site-title em { font-style: normal; }
 .lang { display: flex; margin-left: auto; border: 1px solid var(--line); }
 .lang button {
   border: 0; background: none; cursor: pointer; padding: 7px 13px;
@@ -76,60 +92,106 @@ a { color: inherit; }
 .bars::before { top: 0; height: 120px; background: linear-gradient(#000 0%, rgba(0, 0, 0, 0)); }
 .bars::after { bottom: 0; height: 150px; background: linear-gradient(rgba(0, 0, 0, 0), #000 92%); }
 
-/* ---------- training combinations ---------- */
+/* ---------- muscle and training dial ---------- */
 .combos {
-  position: absolute; z-index: 2; top: max(76px, 11svh); bottom: 42px;
-  left: max(var(--gut), env(safe-area-inset-left, 0px)); width: min(260px, 28vw); overflow: auto;
+  --dial-size: clamp(310px, 32vw, 406px);
+  position: absolute; z-index: 2; left: max(var(--gut), env(safe-area-inset-left, 0px));
+  top: max(72px, calc(50% - var(--dial-size) / 2 - 44px)); bottom: 18px;
+  width: var(--dial-size); overflow: auto; scrollbar-width: thin;
 }
 body.drawer-open .combos { visibility: hidden; }
-.combos h2 {
-  margin: 0; color: var(--ink); font-size: 14px; font-weight: 600; letter-spacing: .05em;
+.dial-modes {
+  display: flex; justify-content: center; gap: 3px; margin-bottom: 8px;
+}
+.dial-modes button {
+  min-height: 36px; padding: 0 13px; border: 1px solid var(--line);
+  background: rgba(10, 14, 16, .8); color: var(--mute); cursor: pointer;
+  font-size: 12px; letter-spacing: .03em;
+}
+.dial-modes button:hover, .dial-modes button[aria-pressed="true"] {
+  border-color: rgba(111, 208, 222, .52); background: #0a191e; color: #d1f6fa;
 }
 .combo-dial {
-  --dial-radius: 74px;
-  position: relative; width: 228px; height: 202px; max-width: 100%; margin: 4px auto;
-  isolation: isolate;
+  position: relative; isolation: isolate; container-type: inline-size;
+  width: 100%; aspect-ratio: 1; margin: 0 auto; border-radius: 50%;
+  background: radial-gradient(circle, #0c151b 0%, #080d11 35%, rgba(4, 10, 13, .88) 61%, transparent 71%);
 }
-.combo-dial::before, .combo-dial::after, .combo-needle {
-  content: ""; position: absolute; left: 50%; top: 50%; border-radius: 50%; pointer-events: none;
-  width: 184px; height: 184px; translate: -50% -50%;
+.dial-rings, .dial-rings::before, .dial-rings::after, .dial-marker {
+  position: absolute; border-radius: 50%; pointer-events: none;
 }
-.combo-dial::before {
-  border: 1px solid var(--line);
-  background: radial-gradient(circle, rgba(51, 24, 20, .42), rgba(12, 9, 12, .78) 68%, transparent 70%);
+.dial-rings {
+  inset: 2%; border: 1px solid rgba(111, 208, 222, .28);
+  background:
+    linear-gradient(0deg, transparent 49.8%, rgba(111, 208, 222, .14) 50%, transparent 50.2%),
+    linear-gradient(90deg, transparent 49.8%, rgba(111, 208, 222, .14) 50%, transparent 50.2%);
+  box-shadow: inset 0 0 30px rgba(111, 208, 222, .08);
 }
-.combo-dial::after { width: 112px; height: 112px; border: 1px dashed var(--line); }
-.combo-needle {
-  opacity: 0; rotate: var(--selected-angle, 0deg);
-  transition: rotate .38s cubic-bezier(.2, .8, .2, 1), opacity .2s;
+.dial-rings::before {
+  content: ""; inset: 1%;
+  background: repeating-conic-gradient(from -1deg, rgba(111, 208, 222, .55) 0deg 1deg, transparent 1deg 6deg);
+  mask-image: radial-gradient(circle closest-side, transparent 94%, #000 94% 98%, transparent 98%);
 }
-.combo-needle::before {
-  content: ""; position: absolute; left: calc(50% - 9px); top: 0; width: 18px; height: 2px;
-  background: var(--accent-hi); border-radius: 2px; box-shadow: 0 0 14px var(--accent);
+.dial-rings::after {
+  content: ""; inset: 10%;
+  border: 1px solid rgba(111, 208, 222, .2);
+  background:
+    radial-gradient(circle closest-side, transparent 55%, rgba(111, 208, 222, .26) 55.3% 56%, transparent 56.4%),
+    radial-gradient(circle closest-side, transparent 36%, rgba(111, 208, 222, .19) 36.4% 37%, transparent 37.4%);
 }
-.combo-dial.has-selection .combo-needle { opacity: 1; }
+.dial-marker {
+  rotate: var(--marker-angle, 0deg);
+  transition: rotate .38s cubic-bezier(.2, .8, .2, 1);
+}
+.dial-marker-outer { inset: 2%; color: var(--teal); }
+.dial-marker-inner { inset: 23%; color: var(--accent-hi); }
+.dial-marker::before {
+  content: ""; position: absolute; top: 0; left: 50%; translate: -50% -50%;
+  width: 30px; height: 3px; border-radius: 8px;
+  background: currentColor; box-shadow: 0 0 12px currentColor;
+}
+.dial-outer, .dial-inner { position: absolute; inset: 0; pointer-events: none; }
+.dial-outer { --ring-radius: 40cqw; }
+.dial-inner { --ring-radius: 21.8cqw; }
 .combo-dial button {
-  position: absolute; z-index: 1; top: 50%; left: 50%; min-width: 50px; min-height: 38px; padding: 0 8px;
-  border: 1px solid var(--line); background: #0e0a0a; border-radius: 24px; color: #d9cfc7;
-  font-size: 12px; line-height: 1.15; white-space: nowrap; cursor: pointer;
+  border: 1px solid rgba(111, 208, 222, .32); border-radius: 3px; color: #d2e2e7;
+  background: #0a1319; font-size: 12px; line-height: 1.08; cursor: pointer;
+  transition: border-color .2s, background .2s, box-shadow .2s;
 }
-.combo-option {
-  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(-1 * var(--dial-radius))) rotate(calc(-1 * var(--angle)));
+.combo-dial [data-dial-key] {
+  position: absolute; z-index: 1; top: 50%; left: 50%; pointer-events: auto;
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(-1 * var(--ring-radius))) rotate(calc(-1 * var(--angle)));
 }
-.combo-reset { transform: translate(-50%, -50%); }
+.dial-outer button {
+  min-height: 36px; width: 18cqw; padding: 3px 4px; font-weight: 600;
+}
+.dial-inner button {
+  min-height: 34px; width: 17cqw; padding: 3px 2px; font-size: clamp(10px, 3.15cqw, 12px);
+}
 .combo-dial button:hover, .combo-dial button[aria-pressed="true"] {
-  color: var(--ink); border-color: var(--accent-hi); background: #361511;
+  border-color: var(--teal); color: #f1fcff; background: #12313a;
+  box-shadow: 0 0 14px rgba(111, 208, 222, .22), inset 0 0 8px rgba(111, 208, 222, .12);
 }
+.dial-inner button[aria-pressed="true"] {
+  border-color: var(--accent-hi); background: #331814; box-shadow: 0 0 14px rgba(255, 111, 87, .23);
+}
+.dial-hub {
+  position: absolute; top: 50%; left: 50%; translate: -50% -50%;
+  width: 28cqw; text-align: center;
+}
+.dial-hub strong { display: block; font-size: clamp(12px, 4cqw, 17px); line-height: 1.15; text-wrap: balance; }
+.dial-hub .combo-reset { margin-top: 8px; min-height: 29px; padding: 3px 8px; color: var(--mute); }
 .combo-exercises {
-  margin: 0; padding: 0 0 0 2.1em; border-top: 1px solid var(--line);
+  margin: 9px 0 0; padding: 0 0 0 2.1em; border-top: 1px solid var(--line);
   font-variant-numeric: tabular-nums; font-size: 13px;
 }
 .combo-exercises li { border-bottom: 1px solid var(--line); padding-left: 4px; }
 .combo-exercises li::marker { color: var(--accent-hi); }
 .combo-exercises button {
-  display: block; width: 100%; min-height: 36px; padding: 6px 4px;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  width: 100%; min-height: 36px; padding: 6px 4px;
   text-align: left; background: none; border: 0; color: #d9cfc7; cursor: pointer;
 }
+.combo-exercises small { color: var(--mute); font-size: 11px; text-align: right; }
 .combo-exercises button:hover { color: var(--accent-hi); }
 
 .hud {
@@ -291,19 +353,16 @@ button.chip:hover { border-color: var(--gold); color: #fff; }
 @media (max-width: 1180px) { :root { --drawer-w: 420px; } }
 @media (max-width: 860px) {
   .stage { height: auto; min-height: 0; overflow: visible; }
-  .gl-wrap { position: relative; inset: auto; height: 76vh; height: 76svh; min-height: 480px; }
-  .bars { inset: 0 0 auto; height: 76vh; height: 76svh; min-height: 480px; }
+  .stage { --mobile-model-height: clamp(340px, 51svh, 520px); }
+  .gl-wrap { position: relative; inset: auto; height: var(--mobile-model-height); }
+  .bars { inset: 0 0 auto; height: var(--mobile-model-height); }
   .bars::after { height: 120px; }
   .combos {
-    position: relative; inset: auto; width: auto; overflow: visible; padding: 10px var(--gut) 24px;
+    --dial-size: min(350px, calc(100vw - 2 * var(--gut)));
+    position: relative; inset: auto; width: var(--dial-size); margin: 0 auto; padding-bottom: 26px;
+    overflow: visible;
   }
-  .combo-dial {
-    display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; width: auto; height: auto;
-  }
-  .combo-dial::before, .combo-dial::after, .combo-needle { display: none; }
-  .combo-dial button { position: static; transform: none; min-height: 40px; }
-  .combo-reset { order: 1; }
-  .hud { top: calc(max(76svh, 480px) - 58px); bottom: auto; right: var(--gut); left: var(--gut); justify-content: space-between; }
+  .hud { top: calc(var(--mobile-model-height) - 55px); bottom: auto; right: var(--gut); left: var(--gut); justify-content: space-between; }
   body.drawer-open .hud { right: var(--gut); opacity: 0; pointer-events: none; }
   .hud { gap: 8px; }
   .hud-group { min-width: 0; }
@@ -320,6 +379,10 @@ button.chip:hover { border-color: var(--gold); color: #fff; }
   .d-in { padding-block: 24px 36px; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); }
   .d-head h2 { font-size: 40px; }
   html[lang="zh-CN"] .d-head h2 { font-size: 32px; }
+}
+@media (max-width: 380px) {
+  .dial-modes button { padding-inline: 9px; font-size: 11px; white-space: nowrap; }
+  .hud button, html[lang="zh-CN"] .hud button { padding-inline: 4px; font-size: 10px; letter-spacing: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; scroll-behavior: auto !important; }

@@ -341,11 +341,52 @@ LA.muscles = {
     ex: ["tibRaise"] }
 };
 
-/* Combinations list primary muscle groups and exercises in display order. */
-LA.combos = {
-  chest: { zh: "胸", en: "Chest", face: "front",
+/* Training regions cover the muscle groups available in the model. */
+LA.dialRegions = {
+  chest: { zh: "胸部", en: "Chest", face: "front",
     groups: ["upperChest", "midChest"],
     exercises: ["benchPress", "inclineDbPress", "chestDip", "pecDeck"] },
+  shoulders: { zh: "肩部", en: "Shoulders", face: "right",
+    groups: ["frontDelt", "sideDelt", "rearDelt", "rotatorCuff"],
+    exercises: ["dbShoulderPress", "lateralRaise", "reversePecDeck", "externalRotation"] },
+  arms: { zh: "手臂", en: "Arms", face: "right",
+    groups: ["biceps", "triceps", "forearms"],
+    exercises: ["inclineCurl", "pushdown", "wristCurl"] },
+  back: { zh: "背部", en: "Back", face: "back",
+    groups: ["upperTraps", "midBack", "lats", "lowerBack"],
+    exercises: ["latPulldown", "cableRow", "shrug", "backExtension"] },
+  core: { zh: "核心", en: "Core", face: "front",
+    groups: ["abs", "obliques", "serratus"],
+    exercises: ["cableCrunch", "woodchop", "serratusPunch"] },
+  hips: { zh: "臀部", en: "Glutes", face: "back",
+    groups: ["glutes", "gluteMed"],
+    exercises: ["hipThrust", "hipAbduction"] },
+  thighs: { zh: "大腿", en: "Thighs", face: "front",
+    groups: ["quads", "hamstrings", "adductors"],
+    exercises: ["squat", "legCurl", "adductorMachine"] },
+  lowerLegs: { zh: "小腿", en: "Lower leg", face: "right",
+    groups: ["calves", "tibialis"],
+    exercises: ["standingCalf", "tibRaise"] }
+};
+
+/* Short dial labels. The hub and accessible names use the full muscle names. */
+LA.dialLabels = {
+  midChest: { zh: "中下胸", en: "Mid/lower chest" },
+  frontDelt: { zh: "前束", en: "Front delt" },
+  sideDelt: { zh: "中束", en: "Side delt" },
+  rearDelt: { zh: "后束", en: "Rear delt" },
+  upperTraps: { zh: "上斜方肌", en: "Traps" },
+  midBack: { zh: "菱形肌", en: "Mid back" },
+  rotatorCuff: { zh: "肩袖", en: "Cuff" },
+  lowerBack: { zh: "竖脊肌", en: "Low back" },
+  hamstrings: { zh: "腘绳肌", en: "Hams" },
+  calves: { zh: "小腿后侧", en: "Calves" },
+  tibialis: { zh: "胫骨前肌", en: "Tibialis" }
+};
+
+/* Combinations list primary muscle groups and exercises in display order. */
+LA.combos = {
+  chest: LA.dialRegions.chest,
   back: { zh: "背", en: "Back", face: "back",
     groups: ["lats", "midBack", "lowerBack", "rearDelt"],
     exercises: ["latPulldown", "cableRow", "backExtension", "facePull"] },
@@ -363,6 +404,7 @@ LA.combos = {
 /* UI strings */
 LA.t = {
   zh: {
+    titleStart: "薄肌", titleEnd: "图谱", muscleGroups: "肌群",
     combos: "训练组合", wholeBody: "全身",
     front: "正面", back: "背面", male: "男性", female: "女性",
     exercises: "推荐动作", sets: "组 × 次", rest: "组间休息", equip: "器械", level: "难度",
@@ -382,6 +424,7 @@ LA.t = {
     muscles: "包含的肌肉"
   },
   en: {
+    titleStart: "Lean ", titleEnd: "Atlas", muscleGroups: "Muscle groups",
     combos: "Training combinations", wholeBody: "Full body",
     front: "Front", back: "Back", male: "Male", female: "Female",
     exercises: "Exercises", sets: "Sets × reps", rest: "Rest", equip: "Equipment", level: "Level",

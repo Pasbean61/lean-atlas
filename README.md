@@ -1,6 +1,6 @@
 # Lean Atlas · 薄肌图谱
 
-A real-anatomy 3D muscle atlas floating in pure-black, star-lit space. The body turns on its own (or drag it); hover names each muscle, a click opens the lesson for that muscle group: embedded tutorial video (with an Enlarge cinema view), sets × reps, rest and form cues. Use the training dial to highlight a combination and open its lessons in order. 中文 mode plays Chinese lessons from Bilibili, EN mode plays English lessons from YouTube.
+A real-anatomy 3D muscle atlas floating in pure-black, star-lit space. The body turns on its own (or drag it); hover names each muscle, a click opens the lesson for that muscle group: embedded tutorial video (with an Enlarge cinema view), sets × reps, rest and form cues. Use the dial to browse muscle groups or highlight a training combination and open its lessons in order. 中文 mode plays Chinese lessons from Bilibili, EN mode plays English lessons from YouTube.
 
 **▶ Live site: [pasbean61.github.io/lean-atlas](https://pasbean61.github.io/lean-atlas/?from=github)**
 
