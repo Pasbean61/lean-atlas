@@ -351,7 +351,8 @@ const ray = new THREE.Raycaster(); ray.firstHitOnly = true;
 const ndc = new THREE.Vector2();
 let drag = null, hoverQueued = null;
 // where the mouse rests over the canvas (null once it leaves), so the name can be re-checked as the body turns under it
-let pointerAt = null, lastRepick = 0, repickRot = 0;
+let pointerAt = null, lastMoveAt = 0, hoverRot = 0;
+const HOVER_IDLE = 1500;   // ms: Safari can leave the window without any event, so a still pointer is not trusted for long
 
 function pickAt(x, y) {
   if (!ready || !bvhReady) return null;
@@ -372,7 +373,7 @@ canvas.addEventListener("pointermove", (e) => {
     if (drag.moved) { view.rotTarget = drag.rot + dx * 0.0085; view.autoHold = performance.now() + 2600; }
     return;
   }
-  if (e.pointerType === "mouse") { hoverQueued = { x: e.clientX, y: e.clientY }; pointerAt = hoverQueued; }
+  if (e.pointerType === "mouse") { hoverQueued = { x: e.clientX, y: e.clientY }; pointerAt = hoverQueued; lastMoveAt = performance.now(); }
 });
 const endDrag = (e) => {
   if (!drag || drag.id !== e.pointerId) return;
@@ -482,12 +483,14 @@ function frame() {
   if (Math.abs(view.shiftX) > 0.5 || Math.abs(view.shiftY) > 0.5) camera.setViewOffset(w, h, view.shiftX, view.shiftY, w, h);
   else camera.clearViewOffset();
 
-  // the body keeps turning under a still mouse: re-check what is under it so the name never goes stale
-  if (!hoverQueued && pointerAt && !drag && Math.abs(view.rot - repickRot) > 0.004 && now - lastRepick > 90) hoverQueued = pointerAt;
+  // A name is only trusted right after a real pointer move. If the pointer has been still for a while, or the body
+  // has turned under it, the name goes (the browser may not even know the mouse has left the window).
+  if (!hoverQueued && view.hot && !drag && (now - lastMoveAt > HOVER_IDLE || Math.abs(view.rotTarget - hoverRot) > 0.02)) clearHover();
   if (hoverQueued && !drag) {
-    lastRepick = now; repickRot = view.rot;
     const hit = pickAt(hoverQueued.x, hoverQueued.y);
     setHot(hit ? hit.group : null);
+    hoverRot = view.rotTarget;
+    if (hit) view.autoHold = Math.max(view.autoHold, now + HOVER_IDLE + 200);   // hold still while a muscle is being read
     emit("la:hover", hit ? { ...hit, x: hoverQueued.x, y: hoverQueued.y } : null);
     hoverQueued = null;
   }
