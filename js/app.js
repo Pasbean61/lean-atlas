@@ -34,7 +34,7 @@
      A detent = a short filtered noise snap + a faint metallic ping + a low body knock.
      Outer bezel sounds lower and heavier than the inner one. Audio starts on the first real gesture. */
   const sound = (() => {
-    let ctx = null, out = null, noise = null, lastTick = 0;
+    let ctx = null, out = null, noise = null, lastTick = 0, lastTooth = 0;
     let on = store.get("la-sound") !== "off";
     function init() {
       if (ctx || !on) return;
@@ -42,71 +42,103 @@
       if (!AC) return;
       ctx = new AC();
       const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -14; comp.ratio.value = 6;
-      out = ctx.createGain(); out.gain.value = 0.55;
+      comp.threshold.value = -10; comp.ratio.value = 4; comp.attack.value = 0.001;
+      out = ctx.createGain(); out.gain.value = 0.6;
       out.connect(comp).connect(ctx.destination);
       noise = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate);
       const d = noise.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
     const live = () => on && ctx && ctx.state === "running";
-    function burst(t, { freq, q = 4, type = "bandpass", gain, dur, sweep }) {
+    function burst(t, { freq, q = 4, type = "bandpass", gain, dur, sweep, atk = 0.0015 }) {
       const src = ctx.createBufferSource(); src.buffer = noise;
       const f = ctx.createBiquadFilter(); f.type = type; f.frequency.setValueAtTime(freq, t); f.Q.value = q;
       if (sweep) f.frequency.exponentialRampToValueAtTime(sweep, t + dur);
       const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.0015);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + atk);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       src.connect(f).connect(g).connect(out);
       src.start(t, Math.random() * 0.2); src.stop(t + dur + 0.02);
     }
-    function tone(t, { freq, gain, dur, type = "sine", drop = 1 }) {
+    function tone(t, { freq, gain, dur, type = "sine", drop = 1, atk = 0.002 }) {
       const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t);
       if (drop !== 1) o.frequency.exponentialRampToValueAtTime(freq * drop, t + dur);
       const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.002);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + atk);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       o.connect(g).connect(out); o.start(t); o.stop(t + dur + 0.02);
+    }
+    // One crisp metal-on-metal click: a sub-millisecond high-passed snap plus a few inharmonic
+    // partials that ring for a few tens of ms, like a steel pawl dropping into a knurled wheel.
+    const PARTIALS = { outer: [3900, 5650, 7900], inner: [5100, 7350, 9800], latch: [3300, 4850, 6900] };
+    function click(t, { set = "inner", gain = 1, ring = 1, pitch = 1 }) {
+      const jit = pitch * (1 + (Math.random() - 0.5) * 0.04);
+      burst(t, { freq: 4200 * jit, q: 0.7, type: "highpass", gain: 0.55 * gain, dur: 0.009, atk: 0.0004 });
+      burst(t, { freq: 2300 * jit, q: 3, gain: 0.16 * gain, dur: 0.014, atk: 0.0004 });
+      PARTIALS[set].forEach((f, i) => tone(t, { freq: f * jit, gain: (0.07 - i * 0.017) * gain * ring, dur: (0.05 - i * 0.012) * ring + 0.01, atk: 0.0005 }));
+    }
+    // bearing whir: a looped band of noise whose level follows how fast the bezel is turning
+    let whir = null;
+    function whirNode() {
+      if (whir) return whir;
+      const src = ctx.createBufferSource(); src.buffer = noise; src.loop = true;
+      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2400; bp.Q.value = 0.9;
+      const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 900;
+      const g = ctx.createGain(); g.gain.value = 0;
+      src.connect(bp).connect(hp).connect(g).connect(out); src.start();
+      return (whir = { g, bp });
     }
     return {
       get on() { return on; },
       unlock() { init(); if (ctx && ctx.state === "suspended") ctx.resume(); },
       set(v) { on = v; store.set("la-sound", v ? "on" : "off"); if (v) this.unlock(); else if (ctx) ctx.suspend(); },
-      // one notch passing the index; fast spins get lighter, quicker clicks
+      // one notch passing the index: the pawl lifts (faint) then snaps down; fast spins become a lighter ratchet
       tick(ring, speed = 0) {
         if (!live()) return;
         const now = performance.now();
         if (now - lastTick < 22) return;
         lastTick = now;
-        const t = ctx.currentTime, heavy = ring === "outer", jit = 1 + (Math.random() - 0.5) * 0.08;
-        const soft = Math.max(0.45, 1 - Math.min(1, Math.abs(speed) / 900) * 0.55);
-        burst(t, { freq: (heavy ? 2600 : 3600) * jit, q: 5, gain: (heavy ? 0.5 : 0.36) * soft, dur: 0.028 });
-        tone(t, { freq: (heavy ? 1850 : 2900) * jit, gain: 0.05 * soft, dur: 0.05, type: "triangle" });
-        tone(t, { freq: heavy ? 150 : 240, gain: (heavy ? 0.32 : 0.18) * soft, dur: 0.045, drop: 0.6 });
+        const t = ctx.currentTime, outer = ring === "outer";
+        const fast = Math.min(1, Math.abs(speed) / 900), soft = 1 - fast * 0.45;
+        click(t, { set: outer ? "outer" : "inner", gain: 0.28 * soft, ring: 0.5 });
+        click(t + 0.007, { set: outer ? "outer" : "inner", gain: (outer ? 0.95 : 0.8) * soft, ring: 1 - fast * 0.5 });
       },
-      // the bezel seats in its detent
+      // the fine knurl between detents: tiny dry ticks that make it sound like a toothed wheel
+      tooth(ring, speed = 0) {
+        if (!live()) return;
+        const now = performance.now();
+        if (now - lastTick < 12 || now - lastTooth < 16) return;
+        lastTooth = now;
+        const fast = Math.min(1, Math.abs(speed) / 900);
+        click(ctx.currentTime, { set: ring === "outer" ? "outer" : "inner", gain: 0.2 - fast * 0.06, ring: 0.35, pitch: 1.12 });
+      },
+      spin(level) {
+        if (!live()) return;
+        const w = whirNode(), t = ctx.currentTime, l = Math.min(1, level);
+        w.g.gain.setTargetAtTime(l * l * 0.05, t, 0.04);
+        w.bp.frequency.setTargetAtTime(1800 + l * 2600, t, 0.06);
+      },
+      // the bezel seats in its detent: a brighter, ringing snap
       settle(ring) {
         if (!live()) return;
-        const t = ctx.currentTime, heavy = ring === "outer";
-        burst(t, { freq: heavy ? 900 : 1400, q: 1.2, type: "lowpass", gain: heavy ? 0.55 : 0.35, dur: 0.07 });
-        tone(t, { freq: heavy ? 96 : 150, gain: heavy ? 0.5 : 0.3, dur: 0.12, drop: 0.55 });
-        burst(t + 0.012, { freq: 3200, q: 6, gain: 0.12, dur: 0.02 });
+        const t = ctx.currentTime, outer = ring === "outer";
+        click(t, { set: outer ? "outer" : "inner", gain: 1.15, ring: 1.6, pitch: 1.04 });
+        tone(t, { freq: outer ? 1250 : 1600, gain: 0.05, dur: 0.03, atk: 0.0005 });
       },
-      // two-position slide switch: a short scrape, then the latch
+      // two-position slide switch: a short dry scrape, then a clean click-clack
       slide() {
         if (!live()) return;
         const t = ctx.currentTime;
-        burst(t, { freq: 700, q: 2.5, gain: 0.16, dur: 0.16, sweep: 2200 });
-        burst(t + 0.15, { freq: 2400, q: 4, gain: 0.45, dur: 0.03 });
-        tone(t + 0.15, { freq: 130, gain: 0.35, dur: 0.08, drop: 0.6 });
+        burst(t, { freq: 3000, q: 2, gain: 0.06, dur: 0.09, sweep: 6500 });
+        click(t + 0.085, { set: "latch", gain: 0.9, ring: 1.1 });
+        click(t + 0.105, { set: "inner", gain: 0.5, ring: 0.6, pitch: 1.1 });
       },
-      // push button in the hub
+      // push button in the hub: click down, lighter click up
       press() {
         if (!live()) return;
         const t = ctx.currentTime;
-        burst(t, { freq: 1800, q: 3, gain: 0.32, dur: 0.025 });
-        tone(t, { freq: 210, gain: 0.25, dur: 0.06, drop: 0.7 });
-        burst(t + 0.07, { freq: 2600, q: 4, gain: 0.18, dur: 0.02 });
+        click(t, { set: "latch", gain: 0.85, ring: 0.8 });
+        click(t + 0.075, { set: "inner", gain: 0.45, ring: 0.6, pitch: 1.15 });
       }
     };
   })();
@@ -138,11 +170,12 @@
     kick();
   }
 
-  let raf = 0, lastT = 0;
+  let raf = 0, lastT = 0, whirLevel = 0;
+  const TOOTH = 7.5;   // knurl pitch in degrees: fine ticks between the labelled detents
   function kick() { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(tick); } }
   function tick(now) {
     const dt = Math.min(0.032, (now - lastT) / 1000); lastT = now;
-    let moving = false;
+    let moving = false, spin = 0;
     for (const [name, r] of Object.entries(rings)) {
       if (!r.drag) {
         // heavy bezel: low stiffness, just under-damped, so it lands with a small settle
@@ -154,8 +187,17 @@
         } else { moving = true; r.travel = (r.travel || 0) + Math.abs(r.vel * dt); }
       } else moving = true;
       r.el.style.setProperty("--rot", r.rot.toFixed(3) + "deg");
+      // real angular speed this frame (works for drag and spring alike) drives the knurl ticks and the whir
+      const rate = dt > 0 ? Math.abs(r.rot - (r.prev ?? r.rot)) / dt : 0; r.prev = r.rot;
+      spin = Math.max(spin, rate / 650);
       detent(name, r);
+      const tooth = Math.floor(r.rot / TOOTH);
+      if (r.tooth !== undefined && tooth !== r.tooth && !reducedMotion) sound.tooth(name, rate);
+      r.tooth = tooth;
     }
+    whirLevel += (spin - whirLevel) * 0.35;
+    sound.spin(moving ? whirLevel : 0);
+    if (!moving) whirLevel = 0;
     raf = moving ? requestAnimationFrame(tick) : 0;
   }
   // which detent is under the index right now; pulse the lamp each time one clicks past
