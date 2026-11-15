@@ -18,6 +18,10 @@
   const view = () => window.LAView;
   const narrow = () => matchMedia("(max-width: 860px)").matches;
 
+  $("#stat-muscles").textContent = Object.keys(LA.muscles).length;
+  $("#stat-videos").textContent = Object.keys(LA.ex).length + Object.keys(LA.zhVideo).length;
+
+  const intro = $(".intro"), stage = $("#stage");
   const combos = $(".combos"), dial = $("#combo-dial"), exerciseList = $("#combo-exercises");
   const outerRing = $(".dial-outer", dial), innerRing = $(".dial-inner", dial);
   const reset = $(".combo-reset", dial);
@@ -123,12 +127,14 @@
     next.click();
   });
 
-  /* ---------- stage framing: keep the body clear of the lesson drawer ---------- */
+  /* ---------- stage framing ---------- */
   function frameStage() {
     if (!view()) return;
-    if (narrow()) { view().setShift(0, state.sel ? $("#stage").clientHeight * 0.2 : 0); return; }
-    const offset = state.sel ? drawer.offsetWidth : -(combos.offsetLeft + combos.offsetWidth);
-    view().setShift(offset / 2, 0);
+    if (narrow()) { view().setShift(0, state.sel ? stage.clientHeight * 0.2 : 0); return; }
+    const left = state.sel ? 0 : combos.offsetLeft + combos.offsetWidth;
+    const right = state.sel ? drawer.offsetWidth :
+      getComputedStyle(intro).position === "absolute" ? stage.clientWidth - intro.offsetLeft : 0;
+    view().setShift((right - left) / 2, 0);
   }
   addEventListener("resize", frameStage);
 

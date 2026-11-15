@@ -404,6 +404,9 @@ LA.combos = {
 /* UI strings */
 LA.t = {
   zh: {
+    introStart: "点哪里，", introEnd: "就练哪里。",
+    introLede: "一具按真实人体解剖数据建模的 3D 肌肉模型。拖动旋转，点击任意一块肌肉，直接看这块肌肉怎么练。",
+    stat1: "个肌群", stat2: "个教学视频", stat3: "自由旋转",
     titleStart: "薄肌", titleEnd: "图谱", muscleGroups: "肌群",
     combos: "训练组合", wholeBody: "全身",
     front: "正面", back: "背面", male: "男性", female: "女性",
@@ -424,6 +427,9 @@ LA.t = {
     muscles: "包含的肌肉"
   },
   en: {
+    introStart: "Tap a muscle.", introEnd: "Learn the lift.",
+    introLede: "A 3D muscle model built from real human anatomy data. Drag to turn it, tap any muscle, and see exactly how to train it.",
+    stat1: "muscle groups", stat2: "video lessons", stat3: "free rotation",
     titleStart: "Lean ", titleEnd: "Atlas", muscleGroups: "Muscle groups",
     combos: "Training combinations", wholeBody: "Full body",
     front: "Front", back: "Back", male: "Male", female: "Female",
