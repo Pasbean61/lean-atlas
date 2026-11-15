@@ -372,7 +372,7 @@ LA.dialRegions = {
 /* Short dial labels. The hub and accessible names use the full muscle names. */
 LA.dialLabels = {
   shoulders: { zh: "肩部", en: "Delts" },
-  midChest: { zh: "中下胸", en: "Mid/lower chest" },
+  midChest: { zh: "中下胸", en: "Mid chest" },
   frontDelt: { zh: "前束", en: "Front delt" },
   sideDelt: { zh: "中束", en: "Side delt" },
   rearDelt: { zh: "后束", en: "Rear delt" },
@@ -411,7 +411,7 @@ LA.t = {
     muscleGroups: "肌群",
     combos: "训练组合", wholeBody: "全身",
     dialHint: "拖动 · 滚轮 · 方向键 转动", dialHintTouch: "左右滑动转盘",
-    metaGroups: "块肌群", metaMoves: "个动作",
+    metaGroups: "块肌群", metaMoves: "个动作", soundOn: "音效 开", soundOff: "音效 关",
     front: "正面", back: "背面", male: "男性", female: "女性",
     exercises: "推荐动作", sets: "组 × 次", rest: "组间休息", equip: "器械", level: "难度",
     lv: ["", "入门", "进阶", "挑战"], cues: "动作要点", alsoWorks: "同时练到",
@@ -436,7 +436,7 @@ LA.t = {
     muscleGroups: "Muscles",
     combos: "Splits", wholeBody: "Full body",
     dialHint: "Drag · scroll · arrow keys", dialHintTouch: "Swipe sideways to turn",
-    metaGroups: "muscles", metaMoves: "moves",
+    metaGroups: "muscles", metaMoves: "moves", soundOn: "Sound on", soundOff: "Sound off",
     front: "Front", back: "Back", male: "Male", female: "Female",
     exercises: "Exercises", sets: "Sets × reps", rest: "Rest", equip: "Equipment", level: "Level",
     lv: ["", "Beginner", "Intermediate", "Advanced"], cues: "Form cues", alsoWorks: "Also works",

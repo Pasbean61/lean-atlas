@@ -274,7 +274,20 @@ html[lang="zh-CN"] .dial-meta { font-family: var(--f-zh); letter-spacing: .06em;
 }
 .dial-hub .combo-reset:hover { color: #f1d9ad; }
 
-.dial-hint { margin: 12px 0 0; text-align: center; font: 400 10px/1.4 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--faint); }
+.dial-foot { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+.dial-sound {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 9px; cursor: pointer;
+  border: 1px solid rgba(255, 236, 220, .1); border-radius: 3px; background: linear-gradient(#141211, #0a0909);
+  box-shadow: inset 0 1px 0 rgba(255, 245, 230, .06), 0 1px 3px rgba(0, 0, 0, .8);
+  color: #8a8178; font: 400 10px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; transition: color .2s, border-color .2s;
+}
+html[lang="zh-CN"] .dial-sound { font: 400 11px/1 var(--f-zh); letter-spacing: .08em; }
+.dial-sound:hover { color: #e9ddcb; border-color: rgba(201, 164, 106, .4); }
+.dial-sound svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.dial-sound .spk { fill: currentColor; stroke: none; }
+.dial-sound[aria-pressed="true"] { color: #c9a46a; }
+.dial-sound[aria-pressed="true"] .mute, .dial-sound[aria-pressed="false"] .w1, .dial-sound[aria-pressed="false"] .w2 { display: none; }
+.dial-hint { margin: 0; text-align: center; font: 400 10px/1.4 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--faint); }
 html[lang="zh-CN"] .dial-hint { font-family: var(--f-zh); letter-spacing: .14em; }
 .dial-hint .hint-touch { display: none; }
 @media (hover: none) and (pointer: coarse) { .dial-hint .hint-fine { display: none; } .dial-hint .hint-touch { display: inline; } }

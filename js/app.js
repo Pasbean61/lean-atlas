@@ -30,6 +30,88 @@
     muscle.ex.map((exercise) => [exercise, group])));
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  /* ---------- dial sound: synthesized, nothing downloaded ----------
+     A detent = a short filtered noise snap + a faint metallic ping + a low body knock.
+     Outer bezel sounds lower and heavier than the inner one. Audio starts on the first real gesture. */
+  const sound = (() => {
+    let ctx = null, out = null, noise = null, lastTick = 0;
+    let on = store.get("la-sound") !== "off";
+    function init() {
+      if (ctx || !on) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ctx = new AC();
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -14; comp.ratio.value = 6;
+      out = ctx.createGain(); out.gain.value = 0.55;
+      out.connect(comp).connect(ctx.destination);
+      noise = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate);
+      const d = noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const live = () => on && ctx && ctx.state === "running";
+    function burst(t, { freq, q = 4, type = "bandpass", gain, dur, sweep }) {
+      const src = ctx.createBufferSource(); src.buffer = noise;
+      const f = ctx.createBiquadFilter(); f.type = type; f.frequency.setValueAtTime(freq, t); f.Q.value = q;
+      if (sweep) f.frequency.exponentialRampToValueAtTime(sweep, t + dur);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.0015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(f).connect(g).connect(out);
+      src.start(t, Math.random() * 0.2); src.stop(t + dur + 0.02);
+    }
+    function tone(t, { freq, gain, dur, type = "sine", drop = 1 }) {
+      const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (drop !== 1) o.frequency.exponentialRampToValueAtTime(freq * drop, t + dur);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(out); o.start(t); o.stop(t + dur + 0.02);
+    }
+    return {
+      get on() { return on; },
+      unlock() { init(); if (ctx && ctx.state === "suspended") ctx.resume(); },
+      set(v) { on = v; store.set("la-sound", v ? "on" : "off"); if (v) this.unlock(); else if (ctx) ctx.suspend(); },
+      // one notch passing the index; fast spins get lighter, quicker clicks
+      tick(ring, speed = 0) {
+        if (!live()) return;
+        const now = performance.now();
+        if (now - lastTick < 22) return;
+        lastTick = now;
+        const t = ctx.currentTime, heavy = ring === "outer", jit = 1 + (Math.random() - 0.5) * 0.08;
+        const soft = Math.max(0.45, 1 - Math.min(1, Math.abs(speed) / 900) * 0.55);
+        burst(t, { freq: (heavy ? 2600 : 3600) * jit, q: 5, gain: (heavy ? 0.5 : 0.36) * soft, dur: 0.028 });
+        tone(t, { freq: (heavy ? 1850 : 2900) * jit, gain: 0.05 * soft, dur: 0.05, type: "triangle" });
+        tone(t, { freq: heavy ? 150 : 240, gain: (heavy ? 0.32 : 0.18) * soft, dur: 0.045, drop: 0.6 });
+      },
+      // the bezel seats in its detent
+      settle(ring) {
+        if (!live()) return;
+        const t = ctx.currentTime, heavy = ring === "outer";
+        burst(t, { freq: heavy ? 900 : 1400, q: 1.2, type: "lowpass", gain: heavy ? 0.55 : 0.35, dur: 0.07 });
+        tone(t, { freq: heavy ? 96 : 150, gain: heavy ? 0.5 : 0.3, dur: 0.12, drop: 0.55 });
+        burst(t + 0.012, { freq: 3200, q: 6, gain: 0.12, dur: 0.02 });
+      },
+      // two-position slide switch: a short scrape, then the latch
+      slide() {
+        if (!live()) return;
+        const t = ctx.currentTime;
+        burst(t, { freq: 700, q: 2.5, gain: 0.16, dur: 0.16, sweep: 2200 });
+        burst(t + 0.15, { freq: 2400, q: 4, gain: 0.45, dur: 0.03 });
+        tone(t + 0.15, { freq: 130, gain: 0.35, dur: 0.08, drop: 0.6 });
+      },
+      // push button in the hub
+      press() {
+        if (!live()) return;
+        const t = ctx.currentTime;
+        burst(t, { freq: 1800, q: 3, gain: 0.32, dur: 0.025 });
+        tone(t, { freq: 210, gain: 0.25, dur: 0.06, drop: 0.7 });
+        burst(t + 0.07, { freq: 2600, q: 4, gain: 0.18, dur: 0.02 });
+      }
+    };
+  })();
+  ["pointerdown", "keydown", "touchend"].forEach((type) => addEventListener(type, () => sound.unlock(), { passive: true }));
+
   /* ---------- the dial: two machined bezels on springs ----------
      Each ring rotates so the chosen item sits under its index at 12 o'clock. Labels counter-rotate to stay upright.
      rot/target are continuous degrees (never wrapped) so the bezel always takes the short way round. */
@@ -66,7 +148,10 @@
         // heavy bezel: low stiffness, just under-damped, so it lands with a small settle
         const acc = 120 * (r.target - r.rot) - 18 * r.vel;
         r.vel += acc * dt; r.rot += r.vel * dt;
-        if (Math.abs(r.target - r.rot) < 0.02 && Math.abs(r.vel) < 0.3) { r.rot = r.target; r.vel = 0; } else moving = true;
+        if (Math.abs(r.target - r.rot) < 0.02 && Math.abs(r.vel) < 0.3) {
+          if (r.travel > 0.5) sound.settle(name);   // it actually turned: seat it with a clunk
+          r.rot = r.target; r.vel = 0; r.travel = 0;
+        } else { moving = true; r.travel = (r.travel || 0) + Math.abs(r.vel * dt); }
       } else moving = true;
       r.el.style.setProperty("--rot", r.rot.toFixed(3) + "deg");
       detent(name, r);
@@ -82,6 +167,7 @@
     $$("[data-aligned]", r.el).forEach((b) => b.removeAttribute("data-aligned"));
     if (r.drag || r.index >= 0) r.el.children[a]?.setAttribute("data-aligned", "");
     if (quiet) return;
+    sound.tick(name, r.vel);
     const lamp = lamps[name];
     lamp.classList.remove("tick"); void lamp.offsetWidth; lamp.classList.add("tick");
     if (r.drag) preview(name, r.keys[a]);
@@ -168,9 +254,11 @@
     const mode = event.target.closest("[data-mode]")?.dataset.mode;
     if (!mode || mode === state.mode) return;
     state.mode = mode;
+    sound.slide();
     selectDial();
   });
   reset.addEventListener("click", () => {
+    sound.press();
     if (state.mode === "muscles") {
       state.muscle = null;
       state.highlightRegion = false;
@@ -179,6 +267,11 @@
     }
     selectDial();
   });
+
+  /* sound on/off */
+  const soundBtn = $("#dial-sound");
+  function paintSound() { soundBtn.setAttribute("aria-pressed", String(sound.on)); soundBtn.lastChild.textContent = sound.on ? T().soundOn : T().soundOff; }
+  soundBtn.addEventListener("click", () => { sound.set(!sound.on); paintSound(); if (sound.on) setTimeout(() => sound.press(), 30); });
 
   /* tap a label */
   dial.addEventListener("click", (event) => {
@@ -231,7 +324,8 @@
       if (Math.hypot(e.clientX - p.x, e.clientY - p.y) < 6) return;
       if (p.touch && Math.abs(e.clientY - p.y) > Math.abs(e.clientX - p.x)) { r.pending = null; dragRing = null; return; }
       r.drag = p; r.pending = null; r.vel = 0;
-      dial.setPointerCapture(e.pointerId); dial.classList.add("dragging");
+      try { dial.setPointerCapture(e.pointerId); } catch (err) {}
+      dial.classList.add("dragging");
     }
     const d = r.drag, now = performance.now();
     let delta;
@@ -252,7 +346,7 @@
     dragRing = null; r.pending = null;
     if (!r.drag || r.drag.id !== e.pointerId) return;
     const held = performance.now() - r.drag.t > 90;   // paused before letting go: no fling
-    r.drag = null; dial.classList.remove("dragging");
+    r.drag = null; r.travel = 1; dial.classList.remove("dragging");   // always seat a released bezel audibly
     // a flick carries the bezel on a little; then it settles on the nearest detent
     const projected = r.rot + (held ? 0 : Math.max(-600, Math.min(600, r.vel)) * 0.09);
     const idx = Math.round(-projected / r.step);
@@ -485,6 +579,7 @@
     $$("[data-t]").forEach((n) => { const v = t[n.dataset.t]; if (v != null) n.textContent = v; });
     $$(".lang button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === state.lang)));
     renderDial();
+    paintSound();
     if (loader.classList.contains("failed")) $("p", loader).textContent = t.noGl;
     if (state.sel) renderDrawer();
   }
