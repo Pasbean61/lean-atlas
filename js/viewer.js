@@ -173,7 +173,8 @@ float fibreStrand(vec3 p, vec3 a){
 vec3 fibreBump(vec3 p, vec3 n, float h){
   vec3 dpdx=dFdx(p), dpdy=dFdy(p); float dhx=dFdx(h), dhy=dFdy(h);
   vec3 r1=cross(dpdy,n), r2=cross(n,dpdx); float det=dot(dpdx,r1);
-  return normalize(abs(det)*n - sign(det)*(dhx*r1+dhy*r2));
+  vec3 b=abs(det)*n - sign(det)*(dhx*r1+dhy*r2);
+  return dot(b,b) > 1e-24 ? normalize(b) : n;   // degenerate pixel: keep the surface normal instead of normalize(0) = NaN
 }`;
 function fibreMaterial(params, strength) {
   const m = new THREE.MeshPhysicalMaterial(params);
@@ -190,7 +191,7 @@ function fibreMaterial(params, strength) {
       .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + (0.5 - fS) * 0.3 * uFibre, 0.06, 1.0);")
       .replace("#include <normal_fragment_maps>", "#include <normal_fragment_maps>\nnormal = fibreBump(-vViewPosition, normal, fS * uFibre * 0.0009);")
       // x-ray: a ghosted muscle keeps only its rim so deeper, selected muscles show through
-      .replace("#include <dithering_fragment>", "#include <dithering_fragment>\nif (uGhost > 0.001) { float fr = pow(1.0 - abs(dot(normalize(normal), normalize(vViewPosition))), 2.4); gl_FragColor.a *= mix(1.0, 0.03 + 0.5 * fr, uGhost); }");
+      .replace("#include <dithering_fragment>", "#include <dithering_fragment>\nif (uGhost > 0.001) { float fr = pow(clamp(1.0 - abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0), 2.4); gl_FragColor.a *= mix(1.0, 0.03 + 0.5 * fr, uGhost); }");
   };
   m.customProgramCacheKey = () => "fibre";
   return m;
@@ -390,6 +391,24 @@ const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, sample
 const composer = new EffectComposer(renderer, rt);
 composer.setPixelRatio(DPR);
 composer.addPass(new RenderPass(scene, camera));
+// One NaN/Inf pixel in the scene gets blurred across every bloom mip and blacks out the whole frame for a moment
+// (the "flash"). Scrub the scene buffer before bloom sees it: bit-level test so fast-math GPUs can't optimise it away.
+const scrub = new ShaderPass({
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
+  fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+    #if __VERSION__ >= 300
+      uvec4 u = floatBitsToUint(c);
+      if (any(equal(u & uvec4(0x7f800000u), uvec4(0x7f800000u)))) c = vec4(0.0, 0.0, 0.0, 1.0);
+    #else
+      if (!(c.r < 1e20 && c.g < 1e20 && c.b < 1e20 && c.a < 1e20 && c.r > -1e20 && c.g > -1e20 && c.b > -1e20 && c.a > -1e20)) c = vec4(0.0, 0.0, 0.0, 1.0);
+    #endif
+      gl_FragColor = vec4(clamp(c.rgb, 0.0, 64.0), c.a);
+    }`
+});
+composer.addPass(scrub);
 const bloom = new UnrealBloomPass(new THREE.Vector2(4, 4), 0.3, 0.7, 0.93);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
