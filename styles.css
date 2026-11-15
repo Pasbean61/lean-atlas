@@ -59,10 +59,6 @@ a { color: inherit; }
 .top.solid, body.drawer-open .top {
   background: rgba(0, 0, 0, .72); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-color: var(--line);
 }
-.brand { display: flex; align-items: baseline; gap: 12px; text-decoration: none; white-space: nowrap; }
-.brand .mark { align-self: center; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 14px 2px rgba(232, 53, 43, .8); }
-.brand b { font: 600 13px/1 var(--f-body); letter-spacing: .34em; }
-.brand i { font: 500 12px/1 var(--f-zh); font-style: normal; color: var(--mute); letter-spacing: .3em; }
 .lang { display: flex; margin-left: auto; border: 1px solid var(--line); }
 .lang button {
   border: 0; background: none; cursor: pointer; padding: 7px 13px;
@@ -335,9 +331,6 @@ html[lang="zh-CN"] .stage.fit-2 .titles h1 { font-size: clamp(32px, 3.6vw, 50px)
   .d-in { padding-block: 24px 36px; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); }
   .d-head h2 { font-size: 40px; }
   html[lang="zh-CN"] .d-head h2 { font-size: 32px; }
-}
-@media (max-width: 560px) {
-  .brand i { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; scroll-behavior: auto !important; }
