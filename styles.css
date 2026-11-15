@@ -120,129 +120,183 @@ html[lang="zh-CN"] .intro h1 em { font-style: normal; }
   --dial-size: clamp(310px, 32vw, 406px);
   position: absolute; z-index: 2; left: max(var(--gut), env(safe-area-inset-left, 0px));
   top: max(72px, calc(50% - var(--dial-size) / 2 - 44px)); bottom: 18px;
-  width: var(--dial-size); overflow: auto; scrollbar-width: thin;
+  width: var(--dial-size); overflow: auto; scrollbar-width: thin; scrollbar-color: #2c2824 transparent;
 }
 body.drawer-open .combos { visibility: hidden; }
+/* mode switch: a two-position slide switch, engraved legends, a metal knob with a lamp */
 .dial-modes {
-  display: flex; justify-content: center; gap: 3px; margin-bottom: 8px;
+  position: relative; display: grid; grid-template-columns: 1fr 1fr; width: min(268px, 80%); margin: 0 auto 16px; padding: 3px;
+  border-radius: 4px; background: linear-gradient(#070606, #121010);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, .95), inset 0 -1px 0 rgba(255, 240, 220, .05), 0 0 0 1px rgba(0, 0, 0, .9);
 }
-.dial-modes button {
-  min-height: 36px; padding: 0 13px; border: 1px solid var(--line);
-  background: rgba(10, 14, 16, .8); color: var(--mute); cursor: pointer;
-  font-size: 12px; letter-spacing: .03em;
-}
-.dial-modes button:hover, .dial-modes button[aria-pressed="true"] {
-  border-color: #bfa27b; background: rgba(67, 48, 28, .35); color: #f1dfc2;
-}
-.combo-dial {
-  position: relative; isolation: isolate; container-type: inline-size;
-  width: 100%; aspect-ratio: 1; margin: 0 auto; border-radius: 50%;
+.dial-modes-knob {
+  position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 3px;
   background:
-    radial-gradient(ellipse at 30% 18%, rgba(97, 148, 157, .13), transparent 50%),
-    radial-gradient(circle, #10161a 0%, #080b0e 32%, rgba(5, 9, 12, .9) 59%, transparent 70%);
-  box-shadow: inset 0 0 70px rgba(102, 171, 184, .035);
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #3c3833 0%, #24211e 52%, #191715 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 245, 230, .16), inset 0 -1px 0 rgba(0, 0, 0, .6), 0 3px 8px rgba(0, 0, 0, .75), 0 0 0 1px rgba(0, 0, 0, .7);
+  transition: translate .5s cubic-bezier(.3, 1.35, .45, 1);
 }
-.dial-rings, .dial-rings::before, .dial-rings::after, .dial-marker {
+.dial-modes-knob::after {
+  content: ""; position: absolute; left: 11px; top: 50%; width: 4px; height: 4px; translate: 0 -50%; border-radius: 50%;
+  background: var(--accent-hi); box-shadow: 0 0 6px 1px rgba(232, 53, 43, .9);
+}
+.dial-modes[data-active="combos"] .dial-modes-knob { translate: 100% 0; }
+.dial-modes button {
+  position: relative; z-index: 1; min-height: 36px; padding: 0 10px 0 18px; border: 0; background: none; cursor: pointer;
+  color: #6f6861; font-size: 12px; letter-spacing: .1em; text-shadow: 0 -1px 0 rgba(0, 0, 0, .9); transition: color .3s;
+}
+html[lang="en"] .dial-modes button { font: 500 10px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; }
+.dial-modes button:hover { color: #b9afa4; }
+.dial-modes button[aria-pressed="true"] { color: #f1e5d3; }
+
+/* the instrument. Radii are in cqw of the dial's width (edge = 50cqw):
+   scale 46.5–50 · bezel 32–43 · chamfer 30.5–32 · well 16.8–30.5 · hub 0–15.5 */
+.combo-dial {
+  position: relative; container-type: inline-size; width: 100%; aspect-ratio: 1; margin: 0 auto; border-radius: 50%;
+  touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab;
+}
+.combo-dial.dragging { cursor: grabbing; }
+.combo-dial::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, #0e0d0c 60%, #080707 100%);
+  box-shadow: 0 36px 70px -22px #000, 0 0 0 1px rgba(0, 0, 0, .95), 0 0 120px -30px rgba(232, 53, 43, .16);
+}
+.combo-dial::after {   /* knurled outer edge */
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(#030303 0 .55deg, #2b2825 .55deg 1.1deg);
+  mask: radial-gradient(circle closest-side, transparent 98.4%, #000 98.6%);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 98.4%, #000 98.6%);
+}
+.dial-scale, .dial-scale::before, .dial-scale::after, .dial-bezel, .dial-groove, .dial-well {
   position: absolute; border-radius: 50%; pointer-events: none;
 }
-.dial-rings {
-  inset: 2%; border: 1px solid rgba(176, 203, 205, .23);
-  box-shadow: 0 0 0 5px rgba(150, 177, 180, .025), inset 0 0 30px rgba(111, 208, 222, .04);
+.dial-scale { inset: 0; }
+.dial-scale::before {   /* minor graduations every 3° */
+  content: ""; inset: 0;
+  background: repeating-conic-gradient(from -.2deg, rgba(222, 210, 192, .32) 0 .4deg, transparent .4deg 3deg);
+  mask: radial-gradient(circle closest-side, transparent 94.6%, #000 94.8% 97.4%, transparent 97.6%);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 94.6%, #000 94.8% 97.4%, transparent 97.6%);
 }
-.dial-rings::before {
-  content: ""; inset: 1.5%;
+.dial-scale::after {   /* majors every 30° */
+  content: ""; inset: 0;
+  background: repeating-conic-gradient(from -.35deg, rgba(240, 228, 208, .72) 0 .7deg, transparent .7deg 30deg);
+  mask: radial-gradient(circle closest-side, transparent 93%, #000 93.2% 97.6%, transparent 97.8%);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 93%, #000 93.2% 97.6%, transparent 97.8%);
+}
+.dial-bezel {   /* turned gunmetal: lathe rings over a slow sweep of reflected light */
+  inset: 7%;
   background:
-    repeating-conic-gradient(from -.3deg, rgba(220, 204, 173, .7) 0deg .6deg, transparent .6deg 30deg),
-    repeating-conic-gradient(from -.2deg, rgba(156, 184, 189, .4) 0deg .4deg, transparent .4deg 3deg);
-  mask-image: radial-gradient(circle closest-side, transparent 94%, #000 94% 99%, transparent 99%);
+    repeating-radial-gradient(circle, rgba(255, 248, 236, .028) 0 1px, transparent 1px 2.6px),
+    conic-gradient(from 200deg, #171615, #3f3b36 10%, #1b1a18 23%, #2d2a27 37%, #111010 52%, #34312d 67%, #171615 81%, #3d3934 93%, #171615);
+  mask: radial-gradient(circle closest-side, transparent 74.2%, #000 74.6%);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 74.2%, #000 74.6%);
+  box-shadow: inset 0 1px 0 rgba(255, 246, 232, .2), inset 0 -2px 3px rgba(0, 0, 0, .8), inset 0 0 0 1px rgba(0, 0, 0, .6);
 }
-.dial-rings::after {
-  content: ""; inset: 13%;
-  border: 1px solid rgba(159, 190, 198, .14);
-  box-shadow: 0 0 0 5px rgba(159, 190, 198, .025);
-  background: repeating-conic-gradient(from 12deg, rgba(111, 208, 222, .48) 0deg 28deg, transparent 28deg 90deg);
-  mask-image: radial-gradient(circle closest-side, transparent 98%, #000 98%);
+.dial-groove {   /* polished chamfer between bezel and well */
+  inset: 18%;
+  background: conic-gradient(from 320deg, #8a8170, #1c1a18 17%, #5a544b 39%, #100f0e 60%, #776f61 83%, #8a8170);
+  mask: radial-gradient(circle closest-side, transparent 94.4%, #000 94.8%);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 94.4%, #000 94.8%);
 }
-.combo-dial::before, .combo-dial::after {
-  content: ""; position: absolute; border-radius: 50%; pointer-events: none;
+.dial-well {
+  inset: 19.5%;
+  background: radial-gradient(circle, #0d0c0b 58%, #050404 100%);
+  box-shadow: inset 0 9px 16px rgba(0, 0, 0, .95), inset 0 -2px 3px rgba(255, 240, 220, .04);
 }
-.combo-dial::before {
-  inset: 29%; border: 1px solid rgba(198, 175, 139, .26);
-  background: radial-gradient(circle, rgba(198, 175, 139, .05), transparent 70%);
-  box-shadow: 0 0 0 7px rgba(198, 175, 139, .025), inset 0 0 30px rgba(198, 175, 139, .035);
-}
-.combo-dial::after {
-  inset: 32%;
-  background: repeating-conic-gradient(rgba(198, 175, 139, .3) 0deg 1deg, transparent 1deg 12deg);
-  mask-image: radial-gradient(circle closest-side, transparent 97%, #000 97%);
-}
-.dial-marker {
-  rotate: var(--marker-angle, 0deg);
-  transition: rotate .38s cubic-bezier(.2, .8, .2, 1);
-}
-.dial-marker-outer { inset: 2%; color: #dfbc83; }
-.dial-marker-inner { inset: 23%; color: #9be1e7; }
-.dial-marker::before {
-  content: ""; position: absolute; top: 0; left: 50%; translate: -50% -50%;
-  width: 6px; height: 6px; border-radius: 1px; transform: rotate(45deg);
-  background: currentColor; box-shadow: 0 0 12px currentColor;
-}
-.dial-marker-outer::after {
-  content: ""; position: absolute; inset: 0; border-radius: 50%;
-  background: conic-gradient(from -22deg, transparent, rgba(223, 188, 131, .9) 22deg, transparent 44deg);
-  mask-image: radial-gradient(circle closest-side, transparent 99%, #000 99%);
-}
-.dial-outer, .dial-inner { position: absolute; inset: 0; pointer-events: none; }
-.dial-outer { --ring-radius: 40cqw; }
-.dial-inner { --ring-radius: 21.8cqw; }
-.combo-dial button {
-  border: 1px solid transparent; border-radius: 22px; color: #9baeb6;
-  background: rgba(7, 12, 16, .85); font-size: 12px; line-height: 1.08; cursor: pointer;
-  transition: border-color .2s, background .2s, box-shadow .2s;
-}
+
+/* rotating rings: labels counter-rotate to stay upright */
+.dial-outer, .dial-inner { position: absolute; inset: 0; pointer-events: none; transform: rotate(var(--rot, 0deg)); }
+.dial-outer { --r: 37cqw; }
+.dial-inner { --r: 23.4cqw; }
 .combo-dial [data-dial-key] {
-  position: absolute; z-index: 1; top: 50%; left: 50%; pointer-events: auto;
-  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(-1 * var(--ring-radius))) rotate(calc(-1 * var(--angle)));
+  position: absolute; z-index: 2; top: 50%; left: 50%; pointer-events: auto;
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(-1 * var(--r))) rotate(calc(-1 * var(--angle) - var(--rot, 0deg)));
+  display: grid; justify-items: center; gap: 3px; min-width: 44px; min-height: 42px; padding: 5px 4px; align-content: center;
+  border: 0; background: none; cursor: pointer;
+  color: #8a8279; font: 500 13px/1.1 var(--f-zh); letter-spacing: .08em; text-wrap: balance;
+  text-shadow: 0 1px 0 rgba(255, 246, 232, .07), 0 -1px 0 rgba(0, 0, 0, .95);   /* engraved */
+  transition: color .3s, text-shadow .3s;
 }
-.dial-outer button {
-  min-height: 36px; width: 18cqw; padding: 3px 4px; font-weight: 500; letter-spacing: .04em;
+html[lang="en"] .combo-dial [data-dial-key] { font: 600 10.5px/1.15 var(--f-body); letter-spacing: .12em; text-transform: uppercase; }
+.combo-dial [data-dial-key] i { font: 400 8px/1 var(--f-mono); font-style: normal; letter-spacing: .14em; color: #514b45; transition: color .3s; }
+.dial-outer [data-dial-key] { max-width: 21cqw; }
+.dial-inner [data-dial-key] { max-width: 12.5cqw; min-width: 34px; padding-inline: 1px; font-size: 11.5px; letter-spacing: .04em; color: #7f776e; }
+html[lang="en"] .dial-inner [data-dial-key] { font-size: 9.5px; letter-spacing: .08em; }
+html[lang="en"] .dial-outer [data-dial-key] { font-size: 9.5px; letter-spacing: .1em; max-width: 17cqw; }
+.dial-inner [data-dial-key] i { display: none; }
+.combo-dial [data-dial-key]:hover { color: #d8ccbb; }
+.combo-dial [data-dial-key][data-aligned] { color: #d9cdbb; }
+.combo-dial [data-dial-key][aria-pressed="true"] {
+  color: #f7ecdb; text-shadow: 0 0 16px rgba(232, 53, 43, .5), 0 -1px 0 #000;
 }
-.dial-inner button {
-  min-height: 34px; width: 17cqw; padding: 3px 2px; font-size: clamp(10px, 3.15cqw, 12px);
+.combo-dial [data-dial-key][aria-pressed="true"] i { color: var(--accent-hi); }
+.combo-dial [data-dial-key]:focus-visible { outline: 1px solid rgba(201, 164, 106, .7); outline-offset: 0; border-radius: 3px; }
+.combo-dial[data-mode="combos"] .dial-inner [data-dial-key] { color: #a29684; }
+.combo-dial[data-mode="combos"] .dial-inner [data-dial-key]:hover { color: #f1e5d3; }
+
+/* fixed indices at 12 o'clock */
+.dial-index { position: absolute; z-index: 3; left: 50%; pointer-events: none; translate: -50% 0; }
+.dial-index-outer {
+  top: .9cqw; width: max(3px, .9cqw); height: 5.6cqw; border-radius: 1px;
+  background: linear-gradient(#ff7a62, #c52a20);
+  box-shadow: 0 0 10px rgba(232, 53, 43, .85), 0 0 2px #ff8a72;
 }
-.combo-dial button:hover {
-  color: #fff4de; border-color: rgba(223, 188, 131, .4); background: #1b1c1b;
+.dial-index-outer.tick { animation: lamp .26s ease-out; }
+@keyframes lamp { from { box-shadow: 0 0 24px 5px rgba(255, 111, 87, .95), 0 0 2px #fff; } }
+.dial-index-inner {
+  top: calc(18% - .2cqw); width: 0; height: 0;
+  border-left: 1.3cqw solid transparent; border-right: 1.3cqw solid transparent; border-top: 1.8cqw solid #c9a46a;
+  filter: drop-shadow(0 0 4px rgba(201, 164, 106, .55));
 }
-.dial-outer button[aria-pressed="true"] {
-  color: #ffe7be; border-color: rgba(223, 188, 131, .7);
-  background: linear-gradient(135deg, #312c23, #111718);
-  box-shadow: 0 0 22px rgba(223, 188, 131, .12), inset 0 1px rgba(255, 240, 213, .15);
-}
-.dial-inner button { border-bottom-color: rgba(148, 188, 197, .35); border-radius: 0; background: transparent; }
-.dial-inner button[aria-pressed="true"] {
-  color: #d6f7f8; border-bottom-color: #a7dfe4;
-  background: linear-gradient(0deg, rgba(94, 171, 184, .14), transparent);
-  box-shadow: 0 10px 18px -14px #85d1df;
-}
+.dial-index-inner.tick { animation: caret .26s ease-out; }
+@keyframes caret { from { filter: drop-shadow(0 0 9px rgba(255, 214, 150, 1)); } }
+.combo-dial[data-mode="combos"] .dial-index-inner { display: none; }
+
+/* domed glass hub */
 .dial-hub {
-  position: absolute; top: 50%; left: 50%; translate: -50% -50%;
-  width: 28cqw; text-align: center;
+  position: absolute; z-index: 2; top: 50%; left: 50%; width: 31cqw; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+  display: grid; place-content: center; justify-items: center; gap: 1.2cqw; padding: 3cqw; text-align: center;
+  background:
+    radial-gradient(circle at 36% 24%, rgba(255, 250, 240, .1), transparent 40%),
+    radial-gradient(circle, #151312 0%, #070606 80%);
+  box-shadow: 0 0 0 1.3cqw #1b1917, 0 0 0 calc(1.3cqw + 1px) rgba(255, 240, 220, .09), 0 10px 22px rgba(0, 0, 0, .85), inset 0 2px 8px rgba(0, 0, 0, .9);
 }
-.dial-hub strong { display: block; font-family: var(--f-display-zh); font-weight: 600; color: #e7dac5; font-size: clamp(12px, 4cqw, 17px); line-height: 1.15; text-wrap: balance; }
-.dial-hub .combo-reset { margin-top: 8px; min-height: 29px; padding: 3px 8px; color: var(--mute); }
-.combo-exercises {
-  margin: 9px 0 0; padding: 0 0 0 2.1em; border-top: 1px solid var(--line);
-  font-variant-numeric: tabular-nums; font-size: 13px;
+.dial-hub strong {
+  display: block; max-width: 25cqw; color: #f1e6d4; font: 600 clamp(14px, 5.2cqw, 22px)/1.12 var(--f-display-zh); text-wrap: balance;
 }
-.combo-exercises li { border-bottom: 1px solid var(--line); padding-left: 4px; }
-.combo-exercises li::marker { color: var(--accent-hi); }
+html[lang="en"] .dial-hub strong { font: 600 clamp(16px, 5.6cqw, 24px)/1 var(--f-display); }
+.dial-meta { font: 400 clamp(8px, 2.3cqw, 10px)/1.3 var(--f-mono); letter-spacing: .12em; color: #847a70; }
+html[lang="zh-CN"] .dial-meta { font-family: var(--f-zh); letter-spacing: .06em; }
+.dial-hub .combo-reset {
+  min-height: 26px; padding: 2px 9px; border: 0; border-top: 1px solid rgba(201, 164, 106, .3); background: none; cursor: pointer;
+  color: #c9a46a; font-size: 11px; letter-spacing: .12em; transition: color .2s;
+}
+.dial-hub .combo-reset:hover { color: #f1d9ad; }
+
+.dial-hint { margin: 12px 0 0; text-align: center; font: 400 10px/1.4 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: var(--faint); }
+html[lang="zh-CN"] .dial-hint { font-family: var(--f-zh); letter-spacing: .14em; }
+.dial-hint .hint-touch { display: none; }
+@media (hover: none) and (pointer: coarse) { .dial-hint .hint-fine { display: none; } .dial-hint .hint-touch { display: inline; } }
+
+/* exercise list: an engraved plate, numbered, with the prescription on the right */
+.combo-exercises { list-style: none; counter-reset: ex; margin: 14px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.combo-exercises li { counter-increment: ex; border-bottom: 1px solid var(--line); }
 .combo-exercises button {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-  width: 100%; min-height: 36px; padding: 6px 4px;
-  text-align: left; background: none; border: 0; color: #d9cfc7; cursor: pointer;
+  position: relative; display: grid; grid-template-columns: 2.4em 1fr auto; align-items: center; column-gap: 10px;
+  width: 100%; min-height: 46px; padding: 7px 6px 7px 4px; border: 0; background: none; color: #ddd3c9; text-align: left; cursor: pointer;
+  transition: background .25s, color .25s;
 }
-.combo-exercises small { color: var(--mute); font-size: 11px; text-align: right; }
-.combo-exercises button:hover { color: var(--accent-hi); }
+.combo-exercises button::before { content: counter(ex, decimal-leading-zero); font: 400 10px/1 var(--f-mono); letter-spacing: .1em; color: var(--faint); }
+.combo-exercises button::after {
+  content: ""; position: absolute; left: 0; top: 22%; bottom: 22%; width: 1px; background: var(--accent-hi);
+  transform: scaleY(0); transition: transform .25s;
+}
+.combo-exercises button:hover { background: linear-gradient(90deg, rgba(232, 53, 43, .08), transparent 70%); color: #fff; }
+.combo-exercises button:hover::after { transform: none; }
+.combo-exercises .nm { display: grid; gap: 1px; min-width: 0; font-size: 13.5px; line-height: 1.3; }
+.combo-exercises small { color: var(--mute); font-size: 11px; }
+.combo-exercises .rx { font: 400 11px/1 var(--f-mono); color: var(--gold); white-space: nowrap; }
 
 .hud {
   position: absolute; z-index: 2;
@@ -431,7 +485,7 @@ button.chip:hover { border-color: var(--gold); color: #fff; }
   html[lang="zh-CN"] .d-head h2 { font-size: 32px; }
 }
 @media (max-width: 380px) {
-  .dial-modes button { padding-inline: 9px; font-size: 11px; white-space: nowrap; }
+  .dial-modes button { padding-inline: 14px 6px; font-size: 11px; white-space: nowrap; }
   .hud button, html[lang="zh-CN"] .hud button { padding-inline: 4px; font-size: 10px; letter-spacing: 0; }
 }
 @media (prefers-reduced-motion: reduce) {

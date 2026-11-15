@@ -24,43 +24,123 @@
   const intro = $(".intro"), stage = $("#stage");
   const combos = $(".combos"), dial = $("#combo-dial"), exerciseList = $("#combo-exercises");
   const outerRing = $(".dial-outer", dial), innerRing = $(".dial-inner", dial);
-  const reset = $(".combo-reset", dial);
+  const reset = $(".combo-reset", dial), dialModes = $(".dial-modes", combos);
+  const lamps = { outer: $(".dial-index-outer", dial), inner: $(".dial-index-inner", dial) };
   const exerciseGroups = Object.fromEntries(Object.entries(LA.muscles).flatMap(([group, muscle]) =>
     muscle.ex.map((exercise) => [exercise, group])));
-  function renderRing(ring, entries, active) {
-    const index = entries.findIndex(([key]) => key === active);
-    ring.innerHTML = entries.map(([key, item], i) => {
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- the dial: two machined bezels on springs ----------
+     Each ring rotates so the chosen item sits under its index at 12 o'clock. Labels counter-rotate to stay upright.
+     rot/target are continuous degrees (never wrapped) so the bezel always takes the short way round. */
+  const rings = {
+    outer: { el: outerRing, keys: [], step: 0, index: -1, rot: 0, vel: 0, target: 0, aligned: -1, drag: null, pending: null },
+    inner: { el: innerRing, keys: [], step: 0, index: -1, rot: 0, vel: 0, target: 0, aligned: -1, drag: null, pending: null }
+  };
+  const mod = (a, n) => ((a % n) + n) % n;
+  const nearest = (goal, ref) => goal + 360 * Math.round((ref - goal) / 360);
+
+  function renderRing(name, entries, active) {
+    const r = rings[name], n = entries.length, step = n ? 360 / n : 0;
+    r.keys = entries.map(([key]) => key); r.step = step; r.index = r.keys.indexOf(active);
+    r.el.style.setProperty("--n", Math.max(n, 1));
+    r.el.innerHTML = entries.map(([key, item], i) => {
       const name = L(item), label = L(LA.dialLabels[key] || item);
-      return `<button type="button" data-dial-key="${key}" aria-label="${esc(name)}" title="${esc(name)}" aria-pressed="${i === index}" style="--angle:${i * 360 / entries.length}deg">${esc(label)}</button>`;
+      return `<button type="button" data-dial-key="${key}" aria-label="${esc(name)}" title="${esc(name)}" aria-pressed="${i === r.index}" style="--angle:${i * step}deg"><i>${String(i + 1).padStart(2, "0")}</i><span>${esc(label)}</span></button>`;
     }).join("");
-    const marker = ring === outerRing ? $(".dial-marker-outer", dial) : $(".dial-marker-inner", dial);
-    marker.hidden = index < 0;
-    if (index < 0) return;
-    const from = Number(marker.dataset.angle || 0), target = index * 360 / entries.length;
-    const angle = target - 360 * Math.round((target - from) / 360);
-    marker.dataset.angle = angle;
-    marker.style.setProperty("--marker-angle", angle + "deg");
+    // nothing chosen: park half a detent off so no label sits under the index
+    const goal = r.index >= 0 ? -r.index * step : n > 1 ? -step / 2 : 0;
+    r.target = nearest(goal, r.target);
+    if (reducedMotion) { r.rot = r.target; r.vel = 0; }
+    r.aligned = -1; detent(name, r, true);
+    kick();
   }
+
+  let raf = 0, lastT = 0;
+  function kick() { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(tick); } }
+  function tick(now) {
+    const dt = Math.min(0.032, (now - lastT) / 1000); lastT = now;
+    let moving = false;
+    for (const [name, r] of Object.entries(rings)) {
+      if (!r.drag) {
+        // heavy bezel: low stiffness, just under-damped, so it lands with a small settle
+        const acc = 120 * (r.target - r.rot) - 18 * r.vel;
+        r.vel += acc * dt; r.rot += r.vel * dt;
+        if (Math.abs(r.target - r.rot) < 0.02 && Math.abs(r.vel) < 0.3) { r.rot = r.target; r.vel = 0; } else moving = true;
+      } else moving = true;
+      r.el.style.setProperty("--rot", r.rot.toFixed(3) + "deg");
+      detent(name, r);
+    }
+    raf = moving ? requestAnimationFrame(tick) : 0;
+  }
+  // which detent is under the index right now; pulse the lamp each time one clicks past
+  function detent(name, r, quiet) {
+    if (!r.keys.length) return;
+    const a = mod(Math.round(-r.rot / r.step), r.keys.length);
+    if (a === r.aligned) return;
+    r.aligned = a;
+    $$("[data-aligned]", r.el).forEach((b) => b.removeAttribute("data-aligned"));
+    if (r.drag || r.index >= 0) r.el.children[a]?.setAttribute("data-aligned", "");
+    if (quiet) return;
+    const lamp = lamps[name];
+    lamp.classList.remove("tick"); void lamp.offsetWidth; lamp.classList.add("tick");
+    if (r.drag) preview(name, r.keys[a]);
+  }
+  // while the bezel is being turned, light the body and the hub for whatever is under the index
+  function preview(name, key) {
+    const item = state.mode === "combos" ? (name === "outer" ? LA.combos[key] : LA.muscles[key])
+      : name === "outer" ? LA.dialRegions[key] : LA.muscles[key];
+    if (!item) return;
+    $("#dial-selection").textContent = L(item);
+    view()?.setCombo(item.groups || [key]);
+  }
+
+  function choose(name, key) {
+    if (state.mode === "combos") {
+      if (name === "inner") { open(key); return; }
+      state.combo = key;
+    } else if (name === "inner") {
+      state.muscle = key;
+    } else {
+      state.region = key; state.muscle = null; state.highlightRegion = true;
+    }
+    selectDial();
+  }
+  function stepRing(name, dir) {
+    const r = rings[name];
+    if (!r.keys.length) return;
+    const from = r.index >= 0 ? r.index : dir > 0 ? -1 : 0;
+    choose(name, r.keys[mod(from + dir, r.keys.length)]);
+  }
+
   function renderDial() {
-    const browse = state.mode === "muscles";
+    const browse = state.mode === "muscles", t = T();
     const region = LA.dialRegions[state.region];
     const muscle = LA.muscles[state.muscle], combo = LA.combos[state.combo];
-    const current = browse ? muscle || (state.highlightRegion ? region : null) : combo;
-    const options = browse ? Object.entries(LA.dialRegions) : Object.entries(LA.combos);
-    const exercises = browse ? muscle?.ex || (state.highlightRegion ? region.exercises : []) : combo?.exercises;
+    const regionOn = browse && (state.muscle || state.highlightRegion);
+    const current = browse ? muscle || (regionOn ? region : null) : combo;
+    const exercises = browse ? muscle?.ex || (regionOn ? region.exercises : []) : combo?.exercises || [];
+    const groups = browse ? (muscle ? [state.muscle] : regionOn ? region.groups : []) : combo?.groups || [];
 
+    dialModes.dataset.active = state.mode;
     $$("[data-mode]", combos).forEach((button) =>
       button.setAttribute("aria-pressed", String(button.dataset.mode === state.mode)));
     outerRing.setAttribute("aria-labelledby", browse ? "dial-muscles" : "dial-combos");
-    renderRing(outerRing, options, browse ? state.region : state.combo);
-    renderRing(innerRing, browse ? region.groups.map((key) => [key, LA.muscles[key]]) : [], state.muscle);
-    innerRing.hidden = !browse;
-    $("#dial-selection").textContent = current ? L(current) : T().wholeBody;
+    dial.dataset.mode = state.mode;
+    renderRing("outer", Object.entries(browse ? LA.dialRegions : LA.combos), browse ? (regionOn ? state.region : null) : state.combo);
+    const innerKeys = browse ? (regionOn ? region.groups : []) : combo?.groups || [];
+    renderRing("inner", innerKeys.map((key) => [key, LA.muscles[key]]), browse ? state.muscle : null);
+
+    $("#dial-selection").textContent = current ? L(current) : t.wholeBody;
+    $("#dial-meta").textContent = current
+      ? (groups.length > 1 ? `${groups.length} ${t.metaGroups} · ` : "") + `${exercises.length} ${t.metaMoves}`
+      : `${Object.keys(LA.muscles).length} ${t.metaGroups}`;
     reset.hidden = !current;
-    exerciseList.hidden = !exercises?.length;
-    exerciseList.innerHTML = (exercises || []).map((key) => {
+    exerciseList.hidden = !exercises.length;
+    exerciseList.innerHTML = exercises.map((key) => {
+      const ex = LA.ex[key];
       const target = !muscle || !browse ? `<small>${esc(L(LA.muscles[exerciseGroups[key]]))}</small>` : "";
-      return `<li><button type="button" data-exercise="${key}"><span>${esc(L(LA.ex[key].n))}</span>${target}</button></li>`;
+      return `<li><button type="button" data-exercise="${key}"><span class="nm"><span>${esc(L(ex.n))}</span>${target}</span><span class="rx">${esc(RX(ex.rx))}</span></button></li>`;
     }).join("");
   }
   function highlightDial() {
@@ -84,8 +164,8 @@
     renderDial();
     highlightDial();
   }
-  $(".dial-modes", combos).addEventListener("click", (event) => {
-    const mode = event.target.dataset.mode;
+  dialModes.addEventListener("click", (event) => {
+    const mode = event.target.closest("[data-mode]")?.dataset.mode;
     if (!mode || mode === state.mode) return;
     state.mode = mode;
     selectDial();
@@ -98,34 +178,103 @@
       state.combo = null;
     }
     selectDial();
-    ($('[aria-pressed="true"]', outerRing) || $("button", outerRing)).focus({ preventScroll: true });
   });
+
+  /* tap a label */
   dial.addEventListener("click", (event) => {
     const button = event.target.closest("[data-dial-key]");
     if (!button) return;
-    const key = button.dataset.dialKey, ring = button.parentElement;
+    const name = button.parentElement === innerRing ? "inner" : "outer", key = button.dataset.dialKey;
     const focused = document.activeElement === button;
-    if (state.mode === "combos") {
-      state.combo = key;
-    } else if (ring === innerRing) {
-      state.muscle = key;
-    } else {
-      state.region = key;
-      state.muscle = null;
-      state.highlightRegion = true;
-    }
-    selectDial();
-    if (focused) $(`[data-dial-key="${key}"]`, ring).focus({ preventScroll: true });
+    choose(name, key);
+    if (focused) $(`[data-dial-key="${key}"]`, rings[name].el)?.focus({ preventScroll: true });
   });
+  /* arrow keys turn the ring that has focus */
   dial.addEventListener("keydown", (event) => {
-    const direction = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[event.key];
-    if (!direction || !event.target.matches("[data-dial-key]")) return;
+    const dir = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[event.key];
+    const button = event.target.closest?.("[data-dial-key]");
+    if (!dir || !button) return;
     event.preventDefault();
-    const buttons = $$("button", event.target.parentElement);
-    const next = buttons[(buttons.indexOf(event.target) + direction + buttons.length) % buttons.length];
-    next.focus();
-    next.click();
+    const name = button.parentElement === innerRing ? "inner" : "outer";
+    if (name === "inner" && state.mode === "combos") {
+      const buttons = $$("button", innerRing);
+      buttons[mod(buttons.indexOf(button) + dir, buttons.length)]?.focus();
+      return;
+    }
+    stepRing(name, dir);
+    const r = rings[name];
+    r.el.children[r.index]?.focus({ preventScroll: true });
   });
+
+  /* drag (mouse/pen: turn around the centre; touch: swipe sideways so vertical swipes still scroll the page) */
+  let dragRing = null;
+  function ringAt(e) {
+    const box = dial.getBoundingClientRect(), cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+    const f = Math.hypot(e.clientX - cx, e.clientY - cy) / box.width;
+    const name = f > 0.5 ? null : f >= 0.31 ? "outer" : f >= 0.165 ? "inner" : null;
+    if (name === "inner" && (state.mode !== "muscles" || !rings.inner.keys.length)) return null;
+    return name && { name, box, cx, cy };
+  }
+  dial.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    const hit = ringAt(e);
+    if (!hit) return;
+    dragRing = hit.name;
+    rings[hit.name].pending = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: hit.cx, cy: hit.cy, size: hit.box.width,
+      a: Math.atan2(e.clientY - hit.cy, e.clientX - hit.cx), t: performance.now(), touch: e.pointerType === "touch" };
+  });
+  dial.addEventListener("pointermove", (e) => {
+    const r = dragRing && rings[dragRing];
+    const p = r && (r.drag || r.pending);
+    if (!p || p.id !== e.pointerId) return;
+    if (!r.drag) {
+      if (Math.hypot(e.clientX - p.x, e.clientY - p.y) < 6) return;
+      if (p.touch && Math.abs(e.clientY - p.y) > Math.abs(e.clientX - p.x)) { r.pending = null; dragRing = null; return; }
+      r.drag = p; r.pending = null; r.vel = 0;
+      dial.setPointerCapture(e.pointerId); dial.classList.add("dragging");
+    }
+    const d = r.drag, now = performance.now();
+    let delta;
+    if (d.touch) { delta = (e.clientX - d.x) * 360 / (Math.PI * d.size * 0.72); d.x = e.clientX; }
+    else {
+      const a = Math.atan2(e.clientY - d.cy, e.clientX - d.cx);
+      delta = (a - d.a) * 180 / Math.PI; d.a = a;
+      if (delta > 180) delta -= 360; else if (delta < -180) delta += 360;
+    }
+    r.rot += delta;
+    const dt = Math.max(0.008, (now - d.t) / 1000); d.t = now;
+    r.vel = r.vel * 0.55 + (delta / dt) * 0.45;
+    kick();
+  });
+  function endDrag(e) {
+    const name = dragRing, r = name && rings[name];
+    if (!r) return;
+    dragRing = null; r.pending = null;
+    if (!r.drag || r.drag.id !== e.pointerId) return;
+    const held = performance.now() - r.drag.t > 90;   // paused before letting go: no fling
+    r.drag = null; dial.classList.remove("dragging");
+    // a flick carries the bezel on a little; then it settles on the nearest detent
+    const projected = r.rot + (held ? 0 : Math.max(-600, Math.min(600, r.vel)) * 0.09);
+    const idx = Math.round(-projected / r.step);
+    r.target = -idx * r.step;
+    choose(name, r.keys[mod(idx, r.keys.length)]);
+  }
+  dial.addEventListener("pointerup", endDrag);
+  dial.addEventListener("pointercancel", endDrag);
+
+  /* scroll wheel / trackpad: one detent per notch */
+  let wheelAcc = 0, wheelAt = 0;
+  dial.addEventListener("wheel", (e) => {
+    if (narrow()) return;
+    const hit = ringAt(e);
+    if (!hit) return;
+    e.preventDefault();
+    const now = performance.now();
+    wheelAcc += Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    if (Math.abs(wheelAcc) < 36 || now - wheelAt < 140) return;
+    stepRing(hit.name, Math.sign(wheelAcc));
+    wheelAcc = 0; wheelAt = now;
+  }, { passive: false });
 
   /* ---------- stage framing ---------- */
   function frameStage() {
