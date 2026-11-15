@@ -350,6 +350,8 @@ function stepMaterials(k) {
 const ray = new THREE.Raycaster(); ray.firstHitOnly = true;
 const ndc = new THREE.Vector2();
 let drag = null, hoverQueued = null;
+// where the mouse rests over the canvas (null once it leaves), so the name can be re-checked as the body turns under it
+let pointerAt = null, lastRepick = 0, repickRot = 0;
 
 function pickAt(x, y) {
   if (!ready || !bvhReady) return null;
@@ -370,7 +372,7 @@ canvas.addEventListener("pointermove", (e) => {
     if (drag.moved) { view.rotTarget = drag.rot + dx * 0.0085; view.autoHold = performance.now() + 2600; }
     return;
   }
-  if (e.pointerType === "mouse") hoverQueued = { x: e.clientX, y: e.clientY };
+  if (e.pointerType === "mouse") { hoverQueued = { x: e.clientX, y: e.clientY }; pointerAt = hoverQueued; }
 });
 const endDrag = (e) => {
   if (!drag || drag.id !== e.pointerId) return;
@@ -382,7 +384,12 @@ const endDrag = (e) => {
 };
 canvas.addEventListener("pointerup", endDrag);
 canvas.addEventListener("pointercancel", endDrag);
-canvas.addEventListener("pointerleave", () => { hoverQueued = null; if (!drag) { setHot(null); emit("la:hover", null); } });
+function clearHover() { hoverQueued = null; pointerAt = null; if (!drag) { setHot(null); emit("la:hover", null); } }
+canvas.addEventListener("pointerleave", clearHover);
+// leaving the window fast (Safari) can skip pointerleave on the canvas: catch it at the document and window too
+document.documentElement.addEventListener("pointerout", (e) => { if (!e.relatedTarget) clearHover(); });
+addEventListener("blur", clearHover);
+document.addEventListener("visibilitychange", () => { if (document.hidden) clearHover(); });
 
 function setHot(id) { if (view.hot !== id) { view.hot = id; applyStates(); canvas.style.cursor = id ? "pointer" : ""; } }
 
@@ -471,7 +478,10 @@ function frame() {
   if (Math.abs(view.shiftX) > 0.5 || Math.abs(view.shiftY) > 0.5) camera.setViewOffset(w, h, view.shiftX, view.shiftY, w, h);
   else camera.clearViewOffset();
 
+  // the body keeps turning under a still mouse: re-check what is under it so the name never goes stale
+  if (!hoverQueued && pointerAt && !drag && Math.abs(view.rot - repickRot) > 0.004 && now - lastRepick > 90) hoverQueued = pointerAt;
   if (hoverQueued && !drag) {
+    lastRepick = now; repickRot = view.rot;
     const hit = pickAt(hoverQueued.x, hoverQueued.y);
     setHot(hit ? hit.group : null);
     emit("la:hover", hit ? { ...hit, x: hoverQueued.x, y: hoverQueued.y } : null);
