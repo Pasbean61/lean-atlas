@@ -371,6 +371,7 @@ LA.dialRegions = {
 
 /* Short dial labels. The hub and accessible names use the full muscle names. */
 LA.dialLabels = {
+  shoulders: { zh: "肩部", en: "Delts" },
   midChest: { zh: "中下胸", en: "Mid/lower chest" },
   frontDelt: { zh: "前束", en: "Front delt" },
   sideDelt: { zh: "中束", en: "Side delt" },
@@ -432,8 +433,8 @@ LA.t = {
     introStart: "Tap a muscle.", introEnd: "Learn the lift.",
     introLede: "A 3D muscle model built from real human anatomy data. Drag to turn it, tap any muscle, and see exactly how to train it.",
     stat1: "muscle groups", stat2: "video lessons", stat3: "free rotation",
-    muscleGroups: "Muscle groups",
-    combos: "Training combinations", wholeBody: "Full body",
+    muscleGroups: "Muscles",
+    combos: "Splits", wholeBody: "Full body",
     dialHint: "Drag · scroll · arrow keys", dialHintTouch: "Swipe sideways to turn",
     metaGroups: "muscles", metaMoves: "moves",
     front: "Front", back: "Back", male: "Male", female: "Female",
