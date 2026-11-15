@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-build="14">
+<html lang="zh-CN" data-build="15">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;900&display=swap">
-<link rel="stylesheet" href="styles.css?v=14">
+<link rel="stylesheet" href="styles.css?v=15">
 <script>
 /* GitHub Pages lets browsers cache this page for up to 10 minutes. On load, ask the server (bypassing the cache)
    which build is live; if it is newer than the one showing, reload once onto a fresh URL. */
@@ -49,22 +49,14 @@
     <div class="gl-wrap" id="stage"><canvas id="gl" aria-label="3D anatomy model"></canvas></div>
     <div class="bars" aria-hidden="true"></div>
 
-    <div class="leftcol" id="leftcol">
-    <div class="titles" id="titles">
-      <h1><span data-t="h1a"></span><em data-t="h1b"></em></h1>
-      <p class="lede" data-t="lede"></p>
-      <ul class="stats">
-        <li><b>23</b><span data-t="stat1"></span></li>
-        <li><b id="stat-videos">102</b><span data-t="stat2"></span></li>
-        <li><b>360°</b><span data-t="stat3"></span></li>
-      </ul>
-    </div>
-
-    <aside class="index" aria-labelledby="index-h">
-      <h2 id="index-h" class="label" data-t="index"></h2>
-      <div id="index"></div>
-    </aside>
-    </div>
+    <section class="combos" aria-labelledby="combo-title">
+      <h2 id="combo-title" data-t="combos"></h2>
+      <div class="combo-dial" id="combo-dial" role="group" aria-labelledby="combo-title">
+        <span class="combo-needle" aria-hidden="true"></span>
+        <button type="button" class="combo-reset" data-combo="" data-t="wholeBody" aria-pressed="false"></button>
+      </div>
+      <ol class="combo-exercises" id="combo-exercises" aria-live="polite"></ol>
+    </section>
 
     <div class="hud" id="hud">
       <div class="hud-group" role="group" aria-label="View">
@@ -79,7 +71,6 @@
         <button type="button" id="btn-in" aria-label="Zoom in">+</button>
       </div>
     </div>
-    <p class="hint" data-t="hint"></p>
 
     <div class="loader" id="loader">
       <p data-t="loading"></p>
@@ -104,10 +95,10 @@
   <div class="d-in" id="d-in"></div>
 </aside>
 
-<script src="js/data.js?v=14"></script>
+<script src="js/data.js?v=15"></script>
 <script src="js/videos-zh.js?v=14"></script>
 <script src="js/names.js?v=14"></script>
-<script src="js/app.js?v=14"></script>
-<script type="module" src="js/viewer.js?v=14"></script>
+<script src="js/app.js?v=15"></script>
+<script type="module" src="js/viewer.js?v=15"></script>
 </body>
 </html>

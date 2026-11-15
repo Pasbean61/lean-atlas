@@ -1,4 +1,4 @@
-/* Lean Atlas — page logic (drawer, language, index). The 3D stage lives in viewer.js. */
+/* Lean Atlas — page logic (drawer, training combinations, language). The 3D stage lives in viewer.js. */
 (function () {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -10,7 +10,7 @@
 
   const state = {
     lang: store.get("la-lang") || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"),
-    sel: null, ex: null, parts: {}
+    sel: null, ex: null, combo: "chest", parts: {}
   };
   const T = () => LA.t[state.lang];
   const L = (o) => (o ? o[state.lang] : "");
@@ -18,42 +18,65 @@
   const view = () => window.LAView;
   const narrow = () => matchMedia("(max-width: 860px)").matches;
 
-  $("#stat-videos").textContent = Object.keys(LA.ex).length + Object.keys(LA.zhVideo).length;
+  const combos = $(".combos"), dial = $("#combo-dial"), exerciseList = $("#combo-exercises");
+  const comboKeys = Object.keys(LA.combos);
+  const exerciseGroups = Object.fromEntries(Object.entries(LA.muscles).flatMap(([group, muscle]) =>
+    muscle.ex.map((exercise) => [exercise, group])));
+  const angleStep = 360 / comboKeys.length;
+  dial.insertAdjacentHTML("beforeend", comboKeys.map((key, i) =>
+    `<button type="button" class="combo-option" data-combo="${key}" style="--angle:${i * angleStep}deg"></button>`).join(""));
+  const comboButtons = $$("[data-combo]", dial);
+  let dialAngle = 0;
+  function renderCombo() {
+    const combo = LA.combos[state.combo];
+    for (const button of comboButtons) {
+      const key = button.dataset.combo;
+      button.setAttribute("aria-pressed", String(state.combo === key));
+      if (key) button.textContent = L(LA.combos[key]);
+    }
+    if (combo) {
+      const target = comboKeys.indexOf(state.combo) * angleStep;
+      dialAngle = target - 360 * Math.round((target - dialAngle) / 360);
+      dial.style.setProperty("--selected-angle", dialAngle + "deg");
+    }
+    dial.classList.toggle("has-selection", Boolean(combo));
+    exerciseList.hidden = !combo;
+    exerciseList.innerHTML = combo ? combo.exercises.map((key) =>
+      `<li><button type="button" data-exercise="${key}">${esc(L(LA.ex[key].n))}</button></li>`).join("") : "";
+  }
+  function highlightCombo() {
+    const viewer = view(), combo = LA.combos[state.combo];
+    if (!viewer) return;
+    viewer.setCombo(combo ? combo.groups : []);
+    if (!state.sel && combo) viewer.face(combo.face);
+  }
+  dial.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-combo]");
+    if (!button || button.dataset.combo === state.combo) return;
+    state.combo = button.dataset.combo;
+    renderCombo();
+    highlightCombo();
+  });
+  dial.addEventListener("keydown", (event) => {
+    const directions = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 };
+    const direction = directions[event.key];
+    if (!direction) return;
+    event.preventDefault();
+    const current = comboKeys.indexOf(event.target.dataset.combo);
+    const next = current < 0 ? (direction > 0 ? 0 : comboKeys.length - 1)
+      : (current + direction + comboKeys.length) % comboKeys.length;
+    comboButtons[next + 1].focus();
+    comboButtons[next + 1].click();
+  });
 
-  /* ---------- stage framing: keep the body clear of the side panels ---------- */
-  const stageEl = $("#stage");
+  /* ---------- stage framing: keep the body clear of the lesson drawer ---------- */
   function frameStage() {
     if (!view()) return;
-    const w = stageEl.clientWidth, h = stageEl.clientHeight;
-    if (narrow()) { view().setShift(0, state.sel ? h * 0.2 : 0); return; }
-    const left = Math.min(430, w * 0.32), right = state.sel ? Math.min(480, w * 0.4) : 0;
-    let a = left, b = w - right;
-    if (b - a < 380) a = 0;
-    view().setShift(w / 2 - (a + b) / 2, 0);
+    if (narrow()) { view().setShift(0, state.sel ? $("#stage").clientHeight * 0.2 : 0); return; }
+    const offset = state.sel ? drawer.offsetWidth : -(combos.offsetLeft + combos.offsetWidth);
+    view().setShift(offset / 2, 0);
   }
   addEventListener("resize", frameStage);
-
-  /* left column: titles and index share one flex column (they cannot overlap). If the titles need more
-     height than the column leaves them, step them down: stats → smaller title → lede.
-     Re-runs whenever the column, the index or the fonts change size, not just once. */
-  const stageBox = $("#atlas"), titlesEl = $("#titles"), indexBox = $(".index"), leftCol = $("#leftcol");
-  const titlesNeed = () => {
-    let h = 0;
-    for (const c of titlesEl.children) if (c.offsetParent) h = Math.max(h, c.offsetTop - titlesEl.offsetTop + c.offsetHeight);
-    return h;
-  };
-  function fitLeft() {
-    stageBox.classList.remove("fit-1", "fit-2", "fit-3", "fit-4");
-    if (!narrow()) {
-      for (let i = 1; i <= 4 && titlesNeed() > titlesEl.clientHeight + 1; i++) stageBox.classList.add("fit-" + i);
-    }
-  }
-  addEventListener("resize", fitLeft);
-  if ("ResizeObserver" in window) {
-    const ro = new ResizeObserver(() => fitLeft());
-    [leftCol, indexBox, titlesEl.querySelector("h1")].forEach((el) => ro.observe(el));
-  }
-  if (document.fonts) { document.fonts.ready.then(fitLeft); document.fonts.addEventListener?.("loadingdone", fitLeft); }
 
   /* ---------- loader + viewer events ---------- */
   const loader = $("#loader");
@@ -66,23 +89,21 @@
     loader.classList.add("done");
     document.body.classList.add("model-ready");
     frameStage();
+    highlightCombo();
     if (state.sel) { view().select(state.sel, LA.ex[state.ex].also); renderDrawer(); }
   });
   addEventListener("la:viewer", frameStage);
   addEventListener("la:error", () => { loader.classList.add("failed"); $("p", loader).textContent = T().noGl; });
 
   const tip = $("#tip");
-  let hotBtn = null;
   addEventListener("la:hover", (e) => {
     const d = e.detail;
-    if (hotBtn) { hotBtn.classList.remove("hot"); hotBtn = null; }
     if (!d || !LA.muscles[d.group]) { tip.hidden = true; return; }
     const m = LA.muscles[d.group];
     const part = state.lang === "zh" ? (LA.partZh[d.muscle] || L(m)) : LA.partEn(d.muscle);
     const sub = state.lang === "zh" ? LA.partEn(d.muscle) : (LA.partZh[d.muscle] || "");
     tip.innerHTML = `<b>${esc(part)}</b><small>${esc(sub)}</small><em>${esc(L(m))}</em>`;
     tip.style.left = d.x + "px"; tip.style.top = d.y + "px"; tip.hidden = false;
-    hotBtn = $("#mb-" + d.group); if (hotBtn) hotBtn.classList.add("hot");
   });
   addEventListener("la:pick", (e) => { tip.hidden = true; if (e.detail) open(e.detail.group); });
   // the tooltip follows the 3D hover; drop it as soon as the pointer leaves the canvas or the page scrolls
@@ -101,33 +122,28 @@
     autoBtn.setAttribute("aria-pressed", String(on)); if (view()) view().setAuto(on);
   });
 
-  /* ---------- muscle index ---------- */
-  function renderIndex() {
-    $("#index").innerHTML = LA.regions.map((r) => {
-      const items = Object.entries(LA.muscles).filter(([, m]) => m.r === r.id).map(([id, m]) =>
-        `<button type="button" class="mbtn${state.sel === id ? " on" : ""}" id="mb-${id}" data-id="${id}">${esc(L(m))}</button>`).join("");
-      return `<div class="grp"><h3>${esc(L(r.s))}</h3><div>${items}</div></div>`;
-    }).join("");
-  }
-  const indexEl = $("#index");
-  indexEl.addEventListener("click", (e) => { const b = e.target.closest(".mbtn"); if (b) open(b.dataset.id); });
-  indexEl.addEventListener("pointerover", (e) => { const b = e.target.closest(".mbtn"); if (b && view()) view().hover(b.dataset.id); });
-  indexEl.addEventListener("pointerleave", () => view() && view().hover(null));
-
   /* ---------- selection + drawer ---------- */
   const drawer = $("#drawer"), scrim = $("#scrim"), din = $("#d-in");
-  function markIndex() {
-    $$(".mbtn.on").forEach((n) => n.classList.remove("on"));
-    const b = state.sel && $("#mb-" + state.sel); if (b) b.classList.add("on");
-  }
+  let exerciseTrigger = null;
+  exerciseList.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-exercise]");
+    if (!button) return;
+    const key = button.dataset.exercise;
+    exerciseTrigger = key;
+    open(exerciseGroups[key], key);
+  });
   function open(id, exKey) {
     const m = LA.muscles[id];
     if (!m) return;
     state.sel = id;
     state.ex = exKey && m.ex.includes(exKey) ? exKey : m.ex[0];
-    renderDrawer(); markIndex();
     drawer.hidden = false;
-    requestAnimationFrame(() => drawer.classList.add("open"));
+    renderDrawer();
+    requestAnimationFrame(() => {
+      if (!state.sel) return;
+      drawer.classList.add("open");
+      if (exerciseTrigger) $("#d-close").focus({ preventScroll: true });
+    });
     document.body.classList.add("drawer-open");
     if (narrow()) scrim.hidden = false;
     if (view()) view().select(id, LA.ex[state.ex].also);
@@ -140,8 +156,14 @@
     drawer.classList.remove("open");
     document.body.classList.remove("drawer-open");
     scrim.hidden = true;
-    setTimeout(() => { if (!state.sel) { drawer.hidden = true; din.innerHTML = ""; } }, 520);
-    markIndex();
+    const trigger = exerciseTrigger;
+    exerciseTrigger = null;
+    setTimeout(() => {
+      if (state.sel) return;
+      drawer.hidden = true;
+      din.innerHTML = "";
+      if (trigger) $(`[data-exercise="${trigger}"]`, exerciseList)?.focus({ preventScroll: true });
+    }, 520);
     if (view()) view().select(null);
     frameStage();
     history.replaceState(null, "", location.pathname + location.search);
@@ -252,9 +274,9 @@
     document.documentElement.lang = state.lang === "zh" ? "zh-CN" : "en";
     $$("[data-t]").forEach((n) => { const v = t[n.dataset.t]; if (v != null) n.textContent = v; });
     $$(".lang button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === state.lang)));
-    renderIndex();
+    renderCombo();
+    if (loader.classList.contains("failed")) $("p", loader).textContent = t.noGl;
     if (state.sel) renderDrawer();
-    fitLeft();
   }
   $$(".lang button").forEach((b) => b.addEventListener("click", () => {
     state.lang = b.dataset.lang; store.set("la-lang", state.lang); applyLang();

@@ -297,7 +297,7 @@ const view = {
   dist: 4.9, distTarget: 4.9, zoom: 1,
   ty: 0.93, tyTarget: 0.93, pitch: 0.035,
   shiftX: 0, shiftY: 0, shiftXT: 0, shiftYT: 0,
-  sel: null, sec: [], hot: null
+  sel: null, sec: [], combo: new Set(), hot: null
 };
 const intro = { t0: 0 };
 const BASE_DIST = 4.9;
@@ -308,7 +308,11 @@ const YAW = { upperChest: 18, midChest: 22, frontDelt: 38, sideDelt: 82, rearDel
 
 function applyStates() {
   for (const g of Object.values(groups)) {
-    g.state = g.id === view.sel ? "sel" : view.sec.includes(g.id) ? "sec" : view.sel ? "dim" : "idle";
+    if (view.sel) {
+      g.state = g.id === view.sel ? "sel" : view.sec.includes(g.id) ? "sec" : "dim";
+    } else {
+      g.state = view.combo.has(g.id) ? "sel" : view.combo.size ? "dim" : "idle";
+    }
     g.hot = g.id === view.hot;
   }
 }
@@ -333,7 +337,7 @@ function stepMaterials(k) {
     m.emissive.lerp(tmp.copy(e).multiplyScalar(ei), k);
     setGhost(m, g.state === "dim" && !g.hot ? 1 : 0, k);
   }
-  const dim = !!view.sel;
+  const dim = Boolean(view.sel || view.combo.size);
   passive.belly.color.lerp(dim ? COL.bellyDim : COL.belly, k);
   passive.tendon.color.lerp(dim ? COL.tendonDim : COL.tendon, k);
   setGhost(passive.belly, dim ? 1 : 0, k); setGhost(passive.tendon, dim ? 1 : 0, k);
@@ -486,6 +490,10 @@ window.LAView = {
       view.tyTarget = THREE.MathUtils.clamp(g.centroid.y, 0.45, 1.42);
       view.distTarget = THREE.MathUtils.clamp(2.2 + g.size * 1.9, 2.5, 3.9);
     } else { view.tyTarget = 0.93; view.distTarget = BASE_DIST; view.autoHold = performance.now() + 900; }
+  },
+  setCombo(ids) {
+    view.combo = new Set(ids.filter((id) => groups[id]));
+    applyStates();
   },
   setSecondary(secondary = []) { view.sec = secondary.filter((s) => groups[s] && s !== view.sel); applyStates(); },
   hover(id) { view.hot = groups[id] ? id : null; applyStates(); },

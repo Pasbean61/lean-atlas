@@ -76,61 +76,64 @@ a { color: inherit; }
 .bars::before { top: 0; height: 120px; background: linear-gradient(#000 0%, rgba(0, 0, 0, 0)); }
 .bars::after { bottom: 0; height: 150px; background: linear-gradient(rgba(0, 0, 0, 0), #000 92%); }
 
-.hud, .hint { position: absolute; z-index: 2; }
-/* left column: title block on top, index pinned to the bottom. One flex column, so the two can never overlap;
-   if the titles run out of room they are clipped at their own bottom edge, and app.js fitLeft trims them first. */
-.leftcol {
-  position: absolute; z-index: 2; left: max(var(--gut), env(safe-area-inset-left, 0px));
-  top: clamp(92px, 15vh, 150px); bottom: 74px; width: min(440px, 33vw);
-  display: flex; flex-direction: column; justify-content: space-between; gap: 32px; pointer-events: none;
+/* ---------- training combinations ---------- */
+.combos {
+  position: absolute; z-index: 2; top: max(76px, 11svh); bottom: 42px;
+  left: max(var(--gut), env(safe-area-inset-left, 0px)); width: min(260px, 28vw); overflow: auto;
 }
-.titles {
-  flex: 0 1 auto; min-height: 0; clip-path: inset(-60px -60px 0 -60px);
-  transition: opacity .6s ease, transform .6s ease; pointer-events: none;
+body.drawer-open .combos { visibility: hidden; }
+.combos h2 {
+  margin: 0; color: var(--ink); font-size: 14px; font-weight: 600; letter-spacing: .05em;
 }
-.titles > * { opacity: 0; transform: translateY(14px); }
-body.model-ready .titles > * { opacity: 1; transform: none; transition: opacity 1s ease, transform 1.1s cubic-bezier(.2, .7, .2, 1); }
-body.model-ready .titles > :nth-child(2) { transition-delay: .15s; }
-body.model-ready .titles > :nth-child(3) { transition-delay: .3s; }
-body.model-ready .titles > :nth-child(4) { transition-delay: .45s; }
-body.drawer-open .titles { opacity: 0; transform: translateY(-10px); }
-.titles h1 {
-  margin: 0; font: 600 clamp(48px, 5.4vw, 88px)/.94 var(--f-display); letter-spacing: -.015em; text-wrap: balance;
-  text-shadow: 0 2px 40px rgba(0, 0, 0, .6);
+.combo-dial {
+  --dial-radius: 74px;
+  position: relative; width: 228px; height: 202px; max-width: 100%; margin: 4px auto;
+  isolation: isolate;
 }
-html[lang="zh-CN"] .titles h1 { font: 900 clamp(42px, 4.9vw, 78px)/1.14 var(--f-display-zh); letter-spacing: .02em; }
-.titles h1 span, .titles h1 em { display: block; }
-.titles h1 em {
-  font-style: italic; color: var(--accent-hi);
-  background: linear-gradient(100deg, #ff7a5c 0%, var(--accent) 55%, #b3201c 100%);
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+.combo-dial::before, .combo-dial::after, .combo-needle {
+  content: ""; position: absolute; left: 50%; top: 50%; border-radius: 50%; pointer-events: none;
+  width: 184px; height: 184px; translate: -50% -50%;
 }
-html[lang="zh-CN"] .titles h1 em { font-style: normal; }
-.lede { margin: 22px 0 0; max-width: 34ch; color: #c9bfb7; font-size: 15px; text-shadow: 0 1px 18px #000; }
-html[lang="en"] .lede { max-width: 40ch; }
-.stats { display: flex; gap: 0; list-style: none; margin: 26px 0 0; padding: 0; }
-.stats li { display: flex; flex-direction: column; gap: 6px; padding: 0 22px; border-left: 1px solid var(--line); }
-.stats li:first-child { padding-left: 0; border: 0; }
-.stats b { font: 600 34px/1 var(--f-display); font-variant-numeric: lining-nums tabular-nums; letter-spacing: .01em; }
-.stats span { font: 400 11px/1.3 var(--f-body); color: var(--mute); letter-spacing: .06em; }
-html[lang="zh-CN"] .stats span { font-family: var(--f-zh); }
-
-.index { flex: none; pointer-events: auto; opacity: 0; transition: opacity 1s ease .6s; }
-body.model-ready .index { opacity: 1; }
-@media (min-width: 861px) and (max-width: 1499px) { body.drawer-open .index { opacity: 0; pointer-events: none; transition-delay: 0s; transition-duration: .35s; } }
-.label { margin: 0 0 12px; font: 500 10px/1 var(--f-mono); letter-spacing: .3em; text-transform: uppercase; color: var(--faint); }
-.grp { display: grid; grid-template-columns: 52px 1fr; gap: 10px; align-items: start; padding: 7px 0; border-top: 1px solid var(--line); }
-.grp h3 { margin: 6px 0 0; font: 400 11px/1.3 var(--f-body); color: var(--faint); letter-spacing: .04em; }
-html[lang="zh-CN"] .grp h3 { font-family: var(--f-zh); }
-.grp > div { display: flex; flex-wrap: wrap; gap: 0 2px; }
-.mbtn {
-  border: 0; background: none; cursor: pointer; padding: 4px 8px; font-size: 13px; color: #cfc5bd;
-  border-bottom: 1px solid transparent; transition: color .2s, background .2s, border-color .2s; white-space: nowrap;
+.combo-dial::before {
+  border: 1px solid var(--line);
+  background: radial-gradient(circle, rgba(51, 24, 20, .42), rgba(12, 9, 12, .78) 68%, transparent 70%);
 }
-.mbtn:hover, .mbtn.hot { color: #fff; background: rgba(255, 255, 255, .07); }
-.mbtn.on { color: #fff; background: rgba(232, 53, 43, .22); border-color: var(--accent); }
+.combo-dial::after { width: 112px; height: 112px; border: 1px dashed var(--line); }
+.combo-needle {
+  opacity: 0; rotate: var(--selected-angle, 0deg);
+  transition: rotate .38s cubic-bezier(.2, .8, .2, 1), opacity .2s;
+}
+.combo-needle::before {
+  content: ""; position: absolute; left: calc(50% - 9px); top: 0; width: 18px; height: 2px;
+  background: var(--accent-hi); border-radius: 2px; box-shadow: 0 0 14px var(--accent);
+}
+.combo-dial.has-selection .combo-needle { opacity: 1; }
+.combo-dial button {
+  position: absolute; z-index: 1; top: 50%; left: 50%; min-width: 50px; min-height: 38px; padding: 0 8px;
+  border: 1px solid var(--line); background: #0e0a0a; border-radius: 24px; color: #d9cfc7;
+  font-size: 12px; line-height: 1.15; white-space: nowrap; cursor: pointer;
+}
+.combo-option {
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(-1 * var(--dial-radius))) rotate(calc(-1 * var(--angle)));
+}
+.combo-reset { transform: translate(-50%, -50%); }
+.combo-dial button:hover, .combo-dial button[aria-pressed="true"] {
+  color: var(--ink); border-color: var(--accent-hi); background: #361511;
+}
+.combo-exercises {
+  margin: 0; padding: 0 0 0 2.1em; border-top: 1px solid var(--line);
+  font-variant-numeric: tabular-nums; font-size: 13px;
+}
+.combo-exercises li { border-bottom: 1px solid var(--line); padding-left: 4px; }
+.combo-exercises li::marker { color: var(--accent-hi); }
+.combo-exercises button {
+  display: block; width: 100%; min-height: 36px; padding: 6px 4px;
+  text-align: left; background: none; border: 0; color: #d9cfc7; cursor: pointer;
+}
+.combo-exercises button:hover { color: var(--accent-hi); }
 
 .hud {
+  position: absolute; z-index: 2;
   right: max(var(--gut), env(safe-area-inset-right, 0px)); bottom: 30px; display: flex; gap: 10px;
   transition: right .5s cubic-bezier(.2, .7, .2, 1), opacity 1s ease .8s; opacity: 0;
 }
@@ -146,14 +149,6 @@ html[lang="zh-CN"] .hud button { font-family: var(--f-zh); font-size: 12px; }
 .hud button:hover { color: #fff; background: rgba(255, 255, 255, .07); }
 .hud button[aria-pressed="true"] { color: var(--accent-hi); }
 .hud button[aria-pressed="true"]::before { content: "● "; font-size: 8px; vertical-align: 1px; }
-.hint {
-  left: max(var(--gut), env(safe-area-inset-left, 0px)); bottom: 36px; margin: 0;
-  font: 400 11px/1 var(--f-mono); letter-spacing: .14em; color: var(--faint);
-}
-html[lang="zh-CN"] .hint { font-family: var(--f-zh); letter-spacing: .2em; }
-body.drawer-open .hint { opacity: 0; pointer-events: none; }
-.hint { transition: opacity .4s; }
-
 .loader {
   position: absolute; z-index: 3; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
   background: var(--bg); transition: opacity 1.1s ease .15s, visibility 0s linear 1.3s;
@@ -186,6 +181,7 @@ html[lang="zh-CN"] .tip em { font-family: var(--f-zh); font-size: 11px; }
   border-left: 1px solid var(--line); box-shadow: -40px 0 80px -40px #000;
   transform: translateX(104%); transition: transform .55s cubic-bezier(.2, .7, .2, 1); display: flex; flex-direction: column;
 }
+.drawer[hidden] { display: none; }
 .drawer::before { content: ""; position: absolute; left: -1px; top: 0; width: 1px; height: 120px; background: linear-gradient(var(--accent), transparent); }
 .drawer.open { transform: none; }
 .d-in {
@@ -292,28 +288,21 @@ button.chip:hover { border-color: var(--gold); color: #fff; }
 .mono { font-family: var(--f-mono); letter-spacing: .3em; margin-top: 22px !important; }
 
 /* ---------- responsive ---------- */
-/* the title block gives way to the index when space runs short (classes set by app.js fitLeft) */
-.stage.fit-1 .stats { display: none; }
-.stage.fit-2 .leftcol { top: 84px; }
-.stage.fit-2 .titles h1 { font-size: clamp(36px, 4.2vw, 60px); }
-html[lang="zh-CN"] .stage.fit-2 .titles h1 { font-size: clamp(32px, 3.6vw, 50px); }
-.stage.fit-2 .lede { margin-top: 16px; }
-.stage.fit-3 .lede { display: none; }
-.stage.fit-4 .titles h1 { font-size: clamp(30px, 3.4vw, 44px); }
 @media (max-width: 1180px) { :root { --drawer-w: 420px; } }
 @media (max-width: 860px) {
   .stage { height: auto; min-height: 0; overflow: visible; }
   .gl-wrap { position: relative; inset: auto; height: 76vh; height: 76svh; min-height: 480px; }
   .bars { inset: 0 0 auto; height: 76vh; height: 76svh; min-height: 480px; }
   .bars::after { height: 120px; }
-  .leftcol { display: contents; }
-  .titles { position: absolute; z-index: 2; left: var(--gut); right: var(--gut); top: 84px; clip-path: none; }
-  .titles h1 { font-size: clamp(38px, 11vw, 56px); }
-  html[lang="zh-CN"] .titles h1 { font-size: clamp(32px, 9.4vw, 46px); }
-  .lede, .stats, .hint { display: none; }
-  .index { width: auto; padding: 6px var(--gut) 10px; }
-  .grp { grid-template-columns: 64px 1fr; }
-  .mbtn { padding: 7px 9px; font-size: 14px; }
+  .combos {
+    position: relative; inset: auto; width: auto; overflow: visible; padding: 10px var(--gut) 24px;
+  }
+  .combo-dial {
+    display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; width: auto; height: auto;
+  }
+  .combo-dial::before, .combo-dial::after, .combo-needle { display: none; }
+  .combo-dial button { position: static; transform: none; min-height: 40px; }
+  .combo-reset { order: 1; }
   .hud { top: calc(max(76svh, 480px) - 58px); bottom: auto; right: var(--gut); left: var(--gut); justify-content: space-between; }
   body.drawer-open .hud { right: var(--gut); opacity: 0; pointer-events: none; }
   .hud { gap: 8px; }

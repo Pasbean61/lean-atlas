@@ -341,14 +341,30 @@ LA.muscles = {
     ex: ["tibRaise"] }
 };
 
+/* Combinations list primary muscle groups and exercises in display order. */
+LA.combos = {
+  chest: { zh: "胸", en: "Chest", face: "front",
+    groups: ["upperChest", "midChest"],
+    exercises: ["benchPress", "inclineDbPress", "chestDip", "pecDeck"] },
+  back: { zh: "背", en: "Back", face: "back",
+    groups: ["lats", "midBack", "lowerBack", "rearDelt"],
+    exercises: ["latPulldown", "cableRow", "backExtension", "facePull"] },
+  legs: { zh: "腿", en: "Legs", face: "front",
+    groups: ["quads", "glutes", "hamstrings", "calves"],
+    exercises: ["squat", "rdl", "legCurl", "standingCalf"] },
+  arms: { zh: "手臂", en: "Arms", face: "right",
+    groups: ["biceps", "triceps", "forearms"],
+    exercises: ["closeGripBench", "barbellCurl", "pushdown", "hammerCurl", "wristCurl"] },
+  upper: { zh: "上半身", en: "Upper body", face: "front",
+    groups: ["upperChest", "midChest", "lats", "midBack", "frontDelt", "sideDelt", "biceps", "triceps"],
+    exercises: ["inclineDbPress", "latPulldown", "cableRow", "dbShoulderPress", "lateralRaise", "barbellCurl", "pushdown"] }
+};
+
 /* UI strings */
 LA.t = {
   zh: {
-    h1a: "点哪里，", h1b: "就练哪里。",
-    lede: "一具按真实人体解剖数据建模的 3D 肌肉模型。拖动旋转，点击任意一块肌肉，直接看这块肌肉怎么练。",
-    stat1: "个肌群", stat2: "个教学视频", stat3: "自由旋转",
+    combos: "训练组合", wholeBody: "全身",
     front: "正面", back: "背面", male: "男性", female: "女性",
-    hint: "拖动旋转 · 悬停看名称 · 点击看教学", index: "肌群索引",
     exercises: "推荐动作", sets: "组 × 次", rest: "组间休息", equip: "器械", level: "难度",
     lv: ["", "入门", "进阶", "挑战"], cues: "动作要点", alsoWorks: "同时练到",
     play: "播放教学视频", openYt: "在 YouTube 打开", openBili: "在 B 站打开", altEn: "英文原版教学",
@@ -360,17 +376,14 @@ LA.t = {
     sideR: "右侧",
     auto: "自动旋转",
     loading: "正在载入人体模型",
-    noGl: "这台设备无法显示 3D 模型，请用肌群索引选择部位。",
+    noGl: "这台设备无法显示 3D 模型。",
     foot3: "3D 模型基于 Z-Anatomy（CC BY-SA 4.0）与 BodyParts3D（© 日本生命科学数据库中心，CC BY-SA 2.1 JP）制作。",
     partOf: "属于",
     muscles: "包含的肌肉"
   },
   en: {
-    h1a: "Tap a muscle.", h1b: "Learn the lift.",
-    lede: "A 3D muscle model built from real human anatomy data. Drag to turn it, tap any muscle, and see exactly how to train it.",
-    stat1: "muscle groups", stat2: "video lessons", stat3: "free rotation",
+    combos: "Training combinations", wholeBody: "Full body",
     front: "Front", back: "Back", male: "Male", female: "Female",
-    hint: "Drag to turn · hover to name · tap for the lesson", index: "Muscle index",
     exercises: "Exercises", sets: "Sets × reps", rest: "Rest", equip: "Equipment", level: "Level",
     lv: ["", "Beginner", "Intermediate", "Advanced"], cues: "Form cues", alsoWorks: "Also works",
     play: "Play lesson", openYt: "Open on YouTube", openBili: "Open on Bilibili", altEn: "English lesson",
@@ -382,7 +395,7 @@ LA.t = {
     sideR: "Right",
     auto: "Auto-rotate",
     loading: "Loading the anatomy model",
-    noGl: "This device cannot show the 3D model. Use the muscle index instead.",
+    noGl: "This device cannot show the 3D model.",
     foot3: "3D model derived from Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (© The Database Center for Life Science, CC BY-SA 2.1 Japan).",
     partOf: "Part of",
     muscles: "Muscles in this group"
