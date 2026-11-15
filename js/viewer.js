@@ -389,6 +389,10 @@ canvas.addEventListener("pointerleave", clearHover);
 // leaving the window fast (Safari) can skip pointerleave on the canvas: catch it at the document and window too
 document.documentElement.addEventListener("pointerout", (e) => { if (!e.relatedTarget) clearHover(); });
 addEventListener("blur", clearHover);
+// and don't rely on leave events at all: the moment the pointer is over anything that isn't the canvas
+// (the dial, the headline, the HUD, outside the page), the name goes
+addEventListener("pointermove", (e) => { if (e.target !== canvas && (pointerAt || view.hot)) clearHover(); }, { capture: true, passive: true });
+document.documentElement.addEventListener("mouseleave", clearHover);
 document.addEventListener("visibilitychange", () => { if (document.hidden) clearHover(); });
 
 function setHot(id) { if (view.hot !== id) { view.hot = id; applyStates(); canvas.style.cursor = id ? "pointer" : ""; } }
