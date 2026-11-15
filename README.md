@@ -2,7 +2,7 @@
 
 A real-anatomy 3D muscle atlas floating in pure-black, star-lit space. The body turns on its own (or drag it); hover names each muscle, a click opens the lesson for that muscle group: embedded tutorial video (with an Enlarge cinema view), sets × reps, rest and form cues. 中文 mode plays Chinese lessons from Bilibili, EN mode plays English lessons from YouTube.
 
-**▶ Live site: [pasbean61.github.io/lean-atlas](https://pasbean61.github.io/lean-atlas/)**
+**▶ Live site: [pasbean61.github.io/lean-atlas](https://pasbean61.github.io/lean-atlas/?from=github)**
 
 Plain HTML/CSS/JS, no build step. Serve the folder over http (the model and the video embeds need a real origin):
 
